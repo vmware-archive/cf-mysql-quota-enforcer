@@ -13,13 +13,14 @@ func main() {
     mysqlUser := ""
     mysqlPassword := ""
     databaseName := ""
-	dbConn, err := sql.Open(*databaseName, fmt.Sprintf("%s:%s@/", *mysqlUser, *mysqlPassword))
+	_, err := sql.Open(databaseName, fmt.Sprintf("%s:%s@/", mysqlUser, mysqlPassword))
     if err != nil {
         panic(err.Error())
     }
 
-    violatorRepo := database.NewViolatorRepo(dbConn)
-    reformerRepo := database.NewReformerRepo(dbConn)
+    //TODO: pass in dbConn
+    violatorRepo := database.NewViolatorRepo()
+    reformerRepo := database.NewReformerRepo()
 
 	e := enforcer.NewEnforcer(violatorRepo, reformerRepo)
 
