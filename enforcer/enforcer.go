@@ -1,29 +1,23 @@
 package enforcer
 
-import (
-	"fmt"
-
-	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database"
-)
+import "github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database"
 
 type Enforcer interface {
 	Enforce() error
 }
 
 type impl struct {
-    violatorRepo, reformerRepo database.Repo
+	violatorRepo, reformerRepo database.Repo
 }
 
 func NewEnforcer(violatorRepo, reformerRepo database.Repo) Enforcer {
 	return &impl{
-        violatorRepo: violatorRepo,
-        reformerRepo: reformerRepo,
+		violatorRepo: violatorRepo,
+		reformerRepo: reformerRepo,
 	}
 }
 
 func (e impl) Enforce() error {
-	fmt.Printf("enforcing\n")
-
 	e.revokePrivilegesFromViolators()
 	e.grantPrivilegesToReformed()
 
@@ -37,8 +31,8 @@ func (e impl) revokePrivilegesFromViolators() error {
 	}
 
 	for _, db := range violators {
-        db.RevokePrivileges()
-        db.ResetActivePrivileges()
+		db.RevokePrivileges()
+		db.ResetActivePrivileges()
 	}
 	return nil
 }
@@ -50,8 +44,8 @@ func (e impl) grantPrivilegesToReformed() error {
 	}
 
 	for _, db := range reformers {
-        db.GrantPrivileges()
-        db.ResetActivePrivileges()
+		db.GrantPrivileges()
+		db.ResetActivePrivileges()
 	}
 
 	return nil
