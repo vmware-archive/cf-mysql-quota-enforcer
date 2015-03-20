@@ -1,51 +1,76 @@
 package enforcer
 
-import "github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database"
+import (
+    "fmt"
+
+    "github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database"
+)
 
 type Enforcer interface {
 	Enforce() error
 }
 
-type impl struct {
+type enforcer struct {
 	violatorRepo, reformerRepo database.Repo
 }
 
 func NewEnforcer(violatorRepo, reformerRepo database.Repo) Enforcer {
-	return &impl{
+	return &enforcer{
 		violatorRepo: violatorRepo,
 		reformerRepo: reformerRepo,
 	}
 }
 
-func (e impl) Enforce() error {
-	e.revokePrivilegesFromViolators()
-	e.grantPrivilegesToReformed()
+func (e enforcer) Enforce() error {
+	err := e.revokePrivilegesFromViolators()
+    if err != nil {
+        return err
+    }
+
+	err = e.grantPrivilegesToReformed()
+    if err != nil {
+        return err
+    }
 
 	return nil
 }
 
-func (e impl) revokePrivilegesFromViolators() error {
+func (e enforcer) revokePrivilegesFromViolators() error {
 	violators, err := e.violatorRepo.All()
 	if err != nil {
-		return err
+		return fmt.Errorf("Finding violators: %s", err.Error())
 	}
 
 	for _, db := range violators {
-		db.RevokePrivileges()
-		db.ResetActivePrivileges()
+		err = db.RevokePrivileges()
+        if err != nil {
+            return fmt.Errorf("Revoking privileges: %s", err.Error())
+        }
+
+        err = db.ResetActivePrivileges()
+        if err != nil {
+            return fmt.Errorf("Resetting active privileges: %s", err.Error())
+        }
 	}
 	return nil
 }
 
-func (e impl) grantPrivilegesToReformed() error {
+func (e enforcer) grantPrivilegesToReformed() error {
 	reformers, err := e.reformerRepo.All()
 	if err != nil {
-		return err
+		return fmt.Errorf("Finding reformers: %s", err.Error())
 	}
 
 	for _, db := range reformers {
-		db.GrantPrivileges()
-		db.ResetActivePrivileges()
+        err = db.GrantPrivileges()
+        if err != nil {
+            return fmt.Errorf("Granting privileges: %s", err.Error())
+        }
+
+        err = db.ResetActivePrivileges()
+        if err != nil {
+            return fmt.Errorf("Resetting active privileges: %s", err.Error())
+        }
 	}
 
 	return nil

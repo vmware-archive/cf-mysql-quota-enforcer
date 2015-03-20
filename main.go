@@ -25,7 +25,11 @@ func main() {
 	e := enforcer.NewEnforcer(violatorRepo, reformerRepo)
 
     for {
-        e.Enforce()
+        err = e.Enforce()
+        if err != nil {
+            panic(fmt.Sprintf("Enforcing Failed: %", err.Error()))
+        }
+
         time.Sleep(1 * time.Second)
     }
 }
