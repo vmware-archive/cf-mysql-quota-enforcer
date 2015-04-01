@@ -7,5 +7,6 @@ install:
 - go install github.com/onsi/ginkgo/ginkgo
 before_script:
 - export PATH=$HOME/gopath/bin:$PATH
+- mysql -e 'create database development;'
 script:
 - ./bin/test

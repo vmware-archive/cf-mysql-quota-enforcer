@@ -7,20 +7,27 @@ import (
 
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database"
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/enforcer"
+	"github.com/pivotal-golang/lager"
 )
 
 func main() {
-	mysqlUser := ""
-	mysqlPassword := ""
-	databaseName := ""
-	_, err := sql.Open(databaseName, fmt.Sprintf("%s:%s@/", mysqlUser, mysqlPassword))
+	logger := lager.NewLogger("Quota Enforcer")
+
+	mysqlUser := "root"
+	mysqlPassword := "password"
+	databaseName := "development"
+	host := "localhost"
+	port := 3306
+
+	logger.Info(fmt.Sprintf("Connection to database '%s' at '%s:%d' as '%s'", databaseName, host, port, mysqlUser))
+
+	db, err := sql.Open(databaseName, fmt.Sprintf("%s:%s@%s:%d/", mysqlUser, mysqlPassword, host, port))
 	if err != nil {
 		panic(err.Error())
 	}
 
-	//TODO: pass in dbConn
-	violatorRepo := database.NewViolatorRepo()
-	reformerRepo := database.NewReformerRepo()
+	violatorRepo := database.NewViolatorRepo(databaseName, db, logger)
+	reformerRepo := database.NewReformerRepo(databaseName, db, logger)
 
 	e := enforcer.NewEnforcer(violatorRepo, reformerRepo)
 
