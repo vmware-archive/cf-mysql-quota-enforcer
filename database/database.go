@@ -18,7 +18,7 @@ WHERE Db = ?`
 type Database interface {
 	GrantPrivileges() error
 	RevokePrivileges() error
-	ResetActivePrivileges() error
+    KillActiveConnections() error
 }
 
 type database struct {
@@ -81,52 +81,34 @@ func (d database) GrantPrivileges() error {
 	return nil
 }
 
-/*
-#
-      # In order to change privileges immediately, we must do two things:
-      # 1) Flush the privileges
-      # 2) Kill any and all active connections
-      #
-      def reset_active_privileges(database)
-        connection.execute('FLUSH PRIVILEGES')
-
-        processes = connection.select('SHOW PROCESSLIST')
-        processes.each do |process|
-          id, db, user = process.values_at('Id', 'db', 'User')
-
-          if db == database && user != 'root'
-            begin
-              connection.execute("KILL CONNECTION #{id}")
-            rescue ActiveRecord::StatementInvalid => e
-              raise unless e.message =~ /Unknown thread id/
-            end
-          end
-        end
-      end
-*/
 // ResetActivePrivileges flushes the privileges and kills all active connections to this database.
 // New connections will get the new privileges.
-func (d database) ResetActivePrivileges() error {
-	//
-	//    rows, err := d.db.Query("SELECT ID FROM INFORMATION_SCHEMA.PROCESSLIST WHERE DB = ? AND USER <> ?", d.name, "root")
-	//    if err != nil {
-	//        return fmt.Errorf("Getting list of open connections to database '%s': %s", d.name, err.Error())
-	//    }
-	//    defer rows.Close()
-	//    for rows.Next() {
-	//        var connectionID string
-	//        if err := rows.Scan(&connectionID); err != nil {
-	//            return fmt.Errorf("Scanning open connections to database '%s': %s", d.name, err.Error())
-	//        }
-	//
-	//        _, err := d.db.Exec("KILL CONNECTION ?", connectionID) //TODO: result?
-	//        if err != nil {
-	//            return fmt.Errorf("Killing connection: %s", err.Error())
-	//        }
-	//    }
-	//    if err := rows.Err(); err != nil {
-	//        return fmt.Errorf("Reading open connections to database '%s': %s", d.name, err.Error())
-	//    }
+func (d database) KillActiveConnections() error {
+    d.logger.Info(fmt.Sprintf("Killing active connections to database '%s'", d.name))
+
+    rows, err := d.db.Query("SELECT ID FROM INFORMATION_SCHEMA.PROCESSLIST WHERE DB = ? AND USER <> 'root'", d.name)
+    if err != nil {
+        return fmt.Errorf("Getting list of open connections to database '%s': %s", d.name, err.Error())
+    }
+    //TODO: untested Close, due to limitation of sqlmock: https://github.com/DATA-DOG/go-sqlmock/issues/15
+    defer rows.Close()
+    for rows.Next() {
+        var connectionID int64
+        if err := rows.Scan(&connectionID); err != nil {
+            //TODO: untested error case, due to limitation of sqlmock: https://github.com/DATA-DOG/go-sqlmock/issues/13
+            return fmt.Errorf("Scanning open connections to database '%s': %s", d.name, err.Error())
+        }
+
+        d.logger.Debug(fmt.Sprintf("Killing active connection %d to database '%s'", connectionID, d.name))
+        _, err := d.db.Exec("KILL CONNECTION ?", connectionID)
+        if err != nil {
+            d.logger.Error(fmt.Sprintf("Failed to kill active connection %d to database '%s'", connectionID, d.name), err)
+        }
+    }
+    //TODO: untested error case, due to limitation of sqlmock: https://github.com/DATA-DOG/go-sqlmock/issues/13
+    if err := rows.Err(); err != nil {
+        return fmt.Errorf("Reading open connections to database '%s': %s", d.name, err.Error())
+    }
 
 	return nil
 }
