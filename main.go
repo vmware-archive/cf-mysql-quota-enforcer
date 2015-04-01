@@ -27,7 +27,7 @@ func main() {
 	for {
 		err = e.Enforce()
 		if err != nil {
-			panic(fmt.Sprintf("Enforcing Failed: %", err.Error()))
+			panic(fmt.Sprintf("Enforcing Failed: %s", err.Error()))
 		}
 
 		time.Sleep(1 * time.Second)

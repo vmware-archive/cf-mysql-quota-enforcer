@@ -11,19 +11,19 @@ type FakeDatabase struct {
 	GrantPrivilegesStub        func() error
 	grantPrivilegesMutex       sync.RWMutex
 	grantPrivilegesArgsForCall []struct{}
-	grantPrivilegesReturns struct {
+	grantPrivilegesReturns     struct {
 		result1 error
 	}
 	RevokePrivilegesStub        func() error
 	revokePrivilegesMutex       sync.RWMutex
 	revokePrivilegesArgsForCall []struct{}
-	revokePrivilegesReturns struct {
+	revokePrivilegesReturns     struct {
 		result1 error
 	}
 	KillActiveConnectionsStub        func() error
 	killActiveConnectionsMutex       sync.RWMutex
 	killActiveConnectionsArgsForCall []struct{}
-	killActiveConnectionsReturns struct {
+	killActiveConnectionsReturns     struct {
 		result1 error
 	}
 }

@@ -48,7 +48,7 @@ func (d database) RevokePrivileges() error {
 		return fmt.Errorf("Updating db '%s' to revoke priviledges: Getting rows affected: %s", d.name, err.Error())
 	}
 
-	d.logger.Info(fmt.Sprintf("Updating db '%s' to revoke priviledges: Rows affected: %s", d.name, rowsAffected))
+	d.logger.Info(fmt.Sprintf("Updating db '%s' to revoke priviledges: Rows affected: %d", d.name, rowsAffected))
 
 	_, err = d.db.Exec("FLUSH PRIVILEGES")
 	if err != nil {
@@ -71,7 +71,7 @@ func (d database) GrantPrivileges() error {
 		return fmt.Errorf("Updating db '%s' to grant priviledges: Getting rows affected: %s", d.name, err.Error())
 	}
 
-	d.logger.Info(fmt.Sprintf("Updating db '%s' to grant priviledges: Rows affected: %s", d.name, rowsAffected))
+	d.logger.Info(fmt.Sprintf("Updating db '%s' to grant priviledges: Rows affected: %d", d.name, rowsAffected))
 
 	_, err = d.db.Exec("FLUSH PRIVILEGES")
 	if err != nil {
