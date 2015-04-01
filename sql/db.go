@@ -1,10 +1,10 @@
 package sql
 
 import (
-    "database/sql"
+	"database/sql"
 )
 
 type DB interface {
-    Exec(query string, args ...interface{}) (sql.Result, error)
-    Query(query string, args ...interface{}) (*sql.Rows, error)
+	Exec(query string, args ...interface{}) (sql.Result, error)
+	Query(query string, args ...interface{}) (*sql.Rows, error)
 }

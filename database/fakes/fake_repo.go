@@ -11,7 +11,7 @@ type FakeRepo struct {
 	AllStub        func() ([]database.Database, error)
 	allMutex       sync.RWMutex
 	allArgsForCall []struct{}
-	allReturns struct {
+	allReturns     struct {
 		result1 []database.Database
 		result2 error
 	}

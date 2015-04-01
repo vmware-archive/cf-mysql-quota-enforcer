@@ -1,5 +1,5 @@
 package database
 
 type Repo interface {
-    All() ([]Database, error)
+	All() ([]Database, error)
 }

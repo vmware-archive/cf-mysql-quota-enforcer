@@ -10,14 +10,14 @@ type FakeResult struct {
 	LastInsertIdStub        func() (int64, error)
 	lastInsertIdMutex       sync.RWMutex
 	lastInsertIdArgsForCall []struct{}
-	lastInsertIdReturns struct {
+	lastInsertIdReturns     struct {
 		result1 int64
 		result2 error
 	}
 	RowsAffectedStub        func() (int64, error)
 	rowsAffectedMutex       sync.RWMutex
 	rowsAffectedArgsForCall []struct{}
-	rowsAffectedReturns struct {
+	rowsAffectedReturns     struct {
 		result1 int64
 		result2 error
 	}

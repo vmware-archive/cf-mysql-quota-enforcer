@@ -1,9 +1,9 @@
 package enforcer
 
 import (
-    "fmt"
+	"fmt"
 
-    "github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database"
+	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database"
 )
 
 type Enforcer interface {
@@ -23,14 +23,14 @@ func NewEnforcer(violatorRepo, reformerRepo database.Repo) Enforcer {
 
 func (e enforcer) Enforce() error {
 	err := e.revokePrivilegesFromViolators()
-    if err != nil {
-        return err
-    }
+	if err != nil {
+		return err
+	}
 
 	err = e.grantPrivilegesToReformed()
-    if err != nil {
-        return err
-    }
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -43,14 +43,14 @@ func (e enforcer) revokePrivilegesFromViolators() error {
 
 	for _, db := range violators {
 		err = db.RevokePrivileges()
-        if err != nil {
-            return fmt.Errorf("Revoking privileges: %s", err.Error())
-        }
+		if err != nil {
+			return fmt.Errorf("Revoking privileges: %s", err.Error())
+		}
 
-        err = db.ResetActivePrivileges()
-        if err != nil {
-            return fmt.Errorf("Resetting active privileges: %s", err.Error())
-        }
+		err = db.ResetActivePrivileges()
+		if err != nil {
+			return fmt.Errorf("Resetting active privileges: %s", err.Error())
+		}
 	}
 	return nil
 }
@@ -62,15 +62,15 @@ func (e enforcer) grantPrivilegesToReformed() error {
 	}
 
 	for _, db := range reformers {
-        err = db.GrantPrivileges()
-        if err != nil {
-            return fmt.Errorf("Granting privileges: %s", err.Error())
-        }
+		err = db.GrantPrivileges()
+		if err != nil {
+			return fmt.Errorf("Granting privileges: %s", err.Error())
+		}
 
-        err = db.ResetActivePrivileges()
-        if err != nil {
-            return fmt.Errorf("Resetting active privileges: %s", err.Error())
-        }
+		err = db.ResetActivePrivileges()
+		if err != nil {
+			return fmt.Errorf("Resetting active privileges: %s", err.Error())
+		}
 	}
 
 	return nil

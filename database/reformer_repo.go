@@ -1,11 +1,11 @@
 package database
 
-type reformerRepo struct {}
+type reformerRepo struct{}
 
 func NewReformerRepo() Repo {
-    return reformerRepo{}
+	return reformerRepo{}
 }
 
 func (r reformerRepo) All() ([]Database, error) {
-    return []Database{}, nil
+	return []Database{}, nil
 }
