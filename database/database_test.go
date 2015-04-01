@@ -29,7 +29,7 @@ var _ = Describe("Database", func() {
 		fakeDB, err = sqlmock.New()
 		Expect(err).ToNot(HaveOccurred())
 
-		logger = lagertest.NewTestLogger("ProxyRunner test")
+		logger = lagertest.NewTestLogger("Database test")
 		database = New(dbName, fakeDB, logger)
 	})
 
@@ -40,7 +40,7 @@ var _ = Describe("Database", func() {
 
 	Describe("RevokePrivileges", func() {
 		var (
-			revokePrivilegesPattern = "UPDATE mysql.db SET Insert_priv = 'N', Update_priv = 'N', Create_priv = 'N' WHERE Db = \\?"
+			revokePrivilegesPattern = `UPDATE mysql.db SET Insert_priv = 'N', Update_priv = 'N', Create_priv = 'N' WHERE Db = \?`
 		)
 
 		It("makes a sql query to revoke priveledges on a database and then flushes privileges", func() {
@@ -108,7 +108,7 @@ var _ = Describe("Database", func() {
 
 	Describe("GrantPrivileges", func() {
 		var (
-			grantPrivilegesPattern = "UPDATE mysql.db SET Insert_priv = 'Y', Update_priv = 'Y', Create_priv = 'Y' WHERE Db = \\?"
+			grantPrivilegesPattern = `UPDATE mysql.db SET Insert_priv = 'Y', Update_priv = 'Y', Create_priv = 'Y' WHERE Db = \?`
 		)
 
 		It("grants priviledges to the database", func() {
@@ -178,7 +178,7 @@ var _ = Describe("Database", func() {
 	Describe("KillActiveConnections", func() {
 		var (
 			processListColumns    = []string{"ID"}
-			processQueryPattern   = "SELECT ID FROM INFORMATION_SCHEMA.PROCESSLIST WHERE DB = \\? AND USER <> 'root'"
+			processQueryPattern   = `SELECT ID FROM INFORMATION_SCHEMA.PROCESSLIST WHERE DB = \? AND USER <> 'root'`
 			killConnectionPattern = "KILL CONNECTION \\?"
 		)
 

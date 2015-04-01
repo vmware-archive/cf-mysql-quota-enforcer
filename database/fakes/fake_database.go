@@ -8,6 +8,12 @@ import (
 )
 
 type FakeDatabase struct {
+	NameStub        func() string
+	nameMutex       sync.RWMutex
+	nameArgsForCall []struct{}
+	nameReturns     struct {
+		result1 string
+	}
 	GrantPrivilegesStub        func() error
 	grantPrivilegesMutex       sync.RWMutex
 	grantPrivilegesArgsForCall []struct{}
@@ -26,6 +32,30 @@ type FakeDatabase struct {
 	killActiveConnectionsReturns     struct {
 		result1 error
 	}
+}
+
+func (fake *FakeDatabase) Name() string {
+	fake.nameMutex.Lock()
+	fake.nameArgsForCall = append(fake.nameArgsForCall, struct{}{})
+	fake.nameMutex.Unlock()
+	if fake.NameStub != nil {
+		return fake.NameStub()
+	} else {
+		return fake.nameReturns.result1
+	}
+}
+
+func (fake *FakeDatabase) NameCallCount() int {
+	fake.nameMutex.RLock()
+	defer fake.nameMutex.RUnlock()
+	return len(fake.nameArgsForCall)
+}
+
+func (fake *FakeDatabase) NameReturns(result1 string) {
+	fake.NameStub = nil
+	fake.nameReturns = struct {
+		result1 string
+	}{result1}
 }
 
 func (fake *FakeDatabase) GrantPrivileges() error {

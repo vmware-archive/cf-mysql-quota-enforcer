@@ -16,6 +16,7 @@ SET Insert_priv = 'Y', Update_priv = 'Y', Create_priv = 'Y'
 WHERE Db = ?`
 
 type Database interface {
+	Name() string
 	GrantPrivileges() error
 	RevokePrivileges() error
 	KillActiveConnections() error
@@ -33,6 +34,10 @@ func New(name string, db *sql.DB, logger lager.Logger) Database {
 		db:     db,
 		logger: logger,
 	}
+}
+
+func (d database) Name() string {
+	return d.name
 }
 
 func (d database) RevokePrivileges() error {
