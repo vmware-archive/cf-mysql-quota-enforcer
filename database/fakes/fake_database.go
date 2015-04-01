@@ -11,19 +11,19 @@ type FakeDatabase struct {
 	GrantPrivilegesStub        func() error
 	grantPrivilegesMutex       sync.RWMutex
 	grantPrivilegesArgsForCall []struct{}
-	grantPrivilegesReturns     struct {
+	grantPrivilegesReturns struct {
 		result1 error
 	}
 	RevokePrivilegesStub        func() error
 	revokePrivilegesMutex       sync.RWMutex
 	revokePrivilegesArgsForCall []struct{}
-	revokePrivilegesReturns     struct {
+	revokePrivilegesReturns struct {
 		result1 error
 	}
-	ResetActivePrivilegesStub        func() error
-	resetActivePrivilegesMutex       sync.RWMutex
-	resetActivePrivilegesArgsForCall []struct{}
-	resetActivePrivilegesReturns     struct {
+	KillActiveConnectionsStub        func() error
+	killActiveConnectionsMutex       sync.RWMutex
+	killActiveConnectionsArgsForCall []struct{}
+	killActiveConnectionsReturns struct {
 		result1 error
 	}
 }
@@ -76,26 +76,26 @@ func (fake *FakeDatabase) RevokePrivilegesReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeDatabase) ResetActivePrivileges() error {
-	fake.resetActivePrivilegesMutex.Lock()
-	fake.resetActivePrivilegesArgsForCall = append(fake.resetActivePrivilegesArgsForCall, struct{}{})
-	fake.resetActivePrivilegesMutex.Unlock()
-	if fake.ResetActivePrivilegesStub != nil {
-		return fake.ResetActivePrivilegesStub()
+func (fake *FakeDatabase) KillActiveConnections() error {
+	fake.killActiveConnectionsMutex.Lock()
+	fake.killActiveConnectionsArgsForCall = append(fake.killActiveConnectionsArgsForCall, struct{}{})
+	fake.killActiveConnectionsMutex.Unlock()
+	if fake.KillActiveConnectionsStub != nil {
+		return fake.KillActiveConnectionsStub()
 	} else {
-		return fake.resetActivePrivilegesReturns.result1
+		return fake.killActiveConnectionsReturns.result1
 	}
 }
 
-func (fake *FakeDatabase) ResetActivePrivilegesCallCount() int {
-	fake.resetActivePrivilegesMutex.RLock()
-	defer fake.resetActivePrivilegesMutex.RUnlock()
-	return len(fake.resetActivePrivilegesArgsForCall)
+func (fake *FakeDatabase) KillActiveConnectionsCallCount() int {
+	fake.killActiveConnectionsMutex.RLock()
+	defer fake.killActiveConnectionsMutex.RUnlock()
+	return len(fake.killActiveConnectionsArgsForCall)
 }
 
-func (fake *FakeDatabase) ResetActivePrivilegesReturns(result1 error) {
-	fake.ResetActivePrivilegesStub = nil
-	fake.resetActivePrivilegesReturns = struct {
+func (fake *FakeDatabase) KillActiveConnectionsReturns(result1 error) {
+	fake.KillActiveConnectionsStub = nil
+	fake.killActiveConnectionsReturns = struct {
 		result1 error
 	}{result1}
 }

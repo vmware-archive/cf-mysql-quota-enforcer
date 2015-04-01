@@ -3,7 +3,7 @@ package database
 import (
 	"fmt"
 
-	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/sql"
+	"database/sql"
 	"github.com/pivotal-golang/lager"
 )
 
@@ -23,12 +23,12 @@ type Database interface {
 
 type database struct {
 	name   string
-	db     sql.DB
+	db     *sql.DB
 	logger lager.Logger
 }
 
-func New(name string, db sql.DB, logger lager.Logger) Database {
-	return database{
+func New(name string, db *sql.DB, logger lager.Logger) Database {
+	return &database{
 		name:   name,
 		db:     db,
 		logger: logger,

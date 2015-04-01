@@ -47,7 +47,7 @@ func (e enforcer) revokePrivilegesFromViolators() error {
 			return fmt.Errorf("Revoking privileges: %s", err.Error())
 		}
 
-		err = db.ResetActivePrivileges()
+		err = db.KillActiveConnections()
 		if err != nil {
 			return fmt.Errorf("Resetting active privileges: %s", err.Error())
 		}
@@ -67,7 +67,7 @@ func (e enforcer) grantPrivilegesToReformed() error {
 			return fmt.Errorf("Granting privileges: %s", err.Error())
 		}
 
-		err = db.ResetActivePrivileges()
+		err = db.KillActiveConnections()
 		if err != nil {
 			return fmt.Errorf("Resetting active privileges: %s", err.Error())
 		}

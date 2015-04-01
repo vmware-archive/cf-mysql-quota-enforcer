@@ -47,7 +47,7 @@ var _ = Describe("Enforcer", func() {
 			for _, db := range fakeViolators {
 				fakeDB := db.(*databasefakes.FakeDatabase)
 				Expect(fakeDB.RevokePrivilegesCallCount()).To(Equal(1))
-				Expect(fakeDB.ResetActivePrivilegesCallCount()).To(Equal(1))
+				Expect(fakeDB.KillActiveConnectionsCallCount()).To(Equal(1))
 			}
 		})
 	})
@@ -79,7 +79,7 @@ var _ = Describe("Enforcer", func() {
 			for _, db := range fakeReformers {
 				fakeDB := db.(*databasefakes.FakeDatabase)
 				Expect(fakeDB.GrantPrivilegesCallCount()).To(Equal(1))
-				Expect(fakeDB.ResetActivePrivilegesCallCount()).To(Equal(1))
+				Expect(fakeDB.KillActiveConnectionsCallCount()).To(Equal(1))
 			}
 		})
 	})
