@@ -9,4 +9,4 @@ before_script:
 - export PATH=$HOME/gopath/bin:$PATH
 script:
 - ./bin/test-unit
-- CONFIG=$(pwd)/integration_config_travis.json ./bin/integration
+- bash -c "CONFIG=$(pwd)/integration_config_travis.json ./bin/integration"
