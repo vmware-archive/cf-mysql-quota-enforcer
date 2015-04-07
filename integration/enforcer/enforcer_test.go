@@ -18,7 +18,8 @@ var _ = Describe("Enforcer Integration", func() {
 	overflowDatabase := func(numRows int, tableName string, db *sql.DB) {
 		_, err := db.Exec(fmt.Sprintf(
 			`CREATE TABLE %s 
-			(id MEDIUMINT AUTO_INCREMENT, data LONGBLOB, PRIMARY KEY (id))`,
+			(id MEDIUMINT AUTO_INCREMENT, data LONGBLOB, PRIMARY KEY (id))
+			ENGINE = INNODB`,
 			tableName,
 		))
 		Expect(err).NotTo(HaveOccurred())
