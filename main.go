@@ -25,7 +25,7 @@ type Config struct {
 
 func main() {
 	flags := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
-	daemonize := flags.Bool("d", false, "Daemonize process")
+	runOnce := flags.Bool("run-once", false, "Run only once instead of continuously")
 	configFile := flags.String("configFile", "", "Location of config file")
 	cf_lager.AddFlags(flags)
 	flags.Parse(os.Args[1:])
@@ -56,17 +56,17 @@ func main() {
 
 	e := enforcer.NewEnforcer(violatorRepo, reformerRepo)
 
-	if *daemonize {
-		logger.Info("Running in daemonize mode")
+	if *runOnce {
+		logger.Info("Running once")
+		enforce(e, logger)
+	} else {
+		logger.Info("Running continuously")
 		func() {
 			for {
 				enforce(e, logger)
 				time.Sleep(1 * time.Second)
 			}
 		}()
-	} else {
-		logger.Info("Running once")
-		enforce(e, logger)
 	}
 }
 
