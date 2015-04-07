@@ -2,25 +2,21 @@ package database_test
 
 import (
 	. "github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database"
+	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/test_helpers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	"database/sql"
 	"fmt"
-	"regexp"
 
 	"errors"
+
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/pivotal-golang/lager/lagertest"
 )
 
 var _ = Describe("ReformerRepo", func() {
-
-	var stripExtraSpace = func(in string) string {
-		pattern := regexp.MustCompile("\\s+")
-		return pattern.ReplaceAllString(in, " ")
-	}
 
 	const brokerDBName = "fake_broker_db_name"
 	var (
@@ -46,7 +42,7 @@ var _ = Describe("ReformerRepo", func() {
 	Describe("All", func() {
 		var (
 			tableSchemaColumns    = []string{"db"}
-			queryReformersPattern = stripExtraSpace(fmt.Sprintf(`SELECT tables.table_schema AS db
+			queryReformersPattern = test_helpers.CompressWhitespace(fmt.Sprintf(`SELECT tables.table_schema AS db
 FROM   information_schema.tables AS tables
 JOIN   \(
            SELECT DISTINCT dbs.Db AS Db from mysql.db AS dbs

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"database/sql"
+
 	"github.com/pivotal-golang/lager"
 )
 
@@ -34,8 +35,11 @@ func (r repo) All() ([]Database, error) {
 
 	rows, err := r.db.Query(r.query)
 	if err != nil {
-		return databases, fmt.Errorf("Executing '%s' database query: %s", r.logTag, err.Error())
+		return databases, fmt.Errorf("Error executing '%s' database query: %s", r.logTag, err.Error())
 	}
+
+	r.logger.Debug(fmt.Sprintf("Executing '%s' database query - completed", r.logTag))
+
 	//TODO: untested Close, due to limitation of sqlmock: https://github.com/DATA-DOG/go-sqlmock/issues/15
 	defer rows.Close()
 
@@ -52,6 +56,14 @@ func (r repo) All() ([]Database, error) {
 	if err := rows.Err(); err != nil {
 		return databases, fmt.Errorf("Reading result row of '%s' database query: %s", r.logTag, err.Error())
 	}
+
+	r.logger.Debug(
+		"returned databases",
+		lager.Data{
+			"databases": databases,
+			"logTag":    r.logTag,
+		},
+	)
 
 	return databases, nil
 }
