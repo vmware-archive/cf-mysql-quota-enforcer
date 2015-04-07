@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 
+	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database"
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/test_helpers"
 
 	"fmt"
@@ -18,7 +19,7 @@ import (
 )
 
 var brokerDBName string
-var rootConfig test_helpers.DatabaseConfig
+var rootConfig database.Config
 var binaryPath string
 
 func TestEnforcer(t *testing.T) {
@@ -33,7 +34,7 @@ var _ = BeforeSuite(func() {
 	func() {
 		initConfig := test_helpers.NewRootDatabaseConfig("")
 
-		db, err := test_helpers.NewDB(initConfig)
+		db, err := database.NewDB(initConfig)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
@@ -41,7 +42,7 @@ var _ = BeforeSuite(func() {
 		Expect(err).ToNot(HaveOccurred())
 	}()
 
-	db, err := test_helpers.NewDB(rootConfig)
+	db, err := database.NewDB(rootConfig)
 	Expect(err).ToNot(HaveOccurred())
 	defer db.Close()
 
@@ -72,7 +73,7 @@ var _ = AfterSuite(func() {
 		Expect(os.IsExist(err)).To(BeFalse())
 	}
 
-	db, err := test_helpers.NewDB(rootConfig)
+	db, err := database.NewDB(rootConfig)
 	Expect(err).ToNot(HaveOccurred())
 	defer db.Close()
 

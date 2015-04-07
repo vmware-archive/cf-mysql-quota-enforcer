@@ -1,18 +1,15 @@
 package main
 
 import (
-	"database/sql"
-	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
-	"path/filepath"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 
 	"github.com/cloudfoundry-incubator/cf-lager"
+	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/config"
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database"
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/enforcer"
 	"github.com/pivotal-golang/lager"
@@ -38,34 +35,29 @@ func main() {
 	if configPath == "" {
 		panic("CONFIG path must be specified")
 	}
-	configPath, err := filepath.Abs(configPath)
+
+	config, err := config.Load(configPath)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	configBytes, err := ioutil.ReadFile(configPath)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	var config Config
-	err = json.Unmarshal(configBytes, &config)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	mysqlUser := config.User
-	mysqlPassword := config.Password
 	databaseName := config.BrokerDBName
 	if *brokerDBName != "" {
 		databaseName = *brokerDBName
 	}
-	host := config.Host
-	port := config.Port
 
-	logger.Info(fmt.Sprintf("Connection to database '%s' at '%s:%d' as '%s'", databaseName, host, port, mysqlUser))
+	logger.Info(fmt.Sprintf(
+		"Connection to database '%s' at '%s:%d' as '%s'",
+		databaseName, config.Host, config.Port, config.User,
+	))
 
-	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", mysqlUser, mysqlPassword, host, port, databaseName))
+	db, err := database.NewDB(database.Config{
+		Host:     config.Host,
+		Port:     config.Port,
+		User:     config.User,
+		Password: config.Password,
+		DBName:   databaseName,
+	})
 	if err != nil {
 		panic(err.Error())
 	}

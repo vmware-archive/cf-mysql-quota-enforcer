@@ -9,8 +9,8 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 
+	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database"
 	. "github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database/table"
-	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/test_helpers"
 )
 
 var _ = Describe("Table Integration", func() {
@@ -34,7 +34,7 @@ var _ = Describe("Table Integration", func() {
 			tableName = fmt.Sprintf("table_size_test_%d", GinkgoParallelNode())
 
 			var err error
-			db, err = test_helpers.NewDB(rootConfig)
+			db, err = database.NewDB(rootConfig)
 			Expect(err).NotTo(HaveOccurred())
 
 			_, err = db.Exec(fmt.Sprintf(

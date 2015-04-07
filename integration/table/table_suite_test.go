@@ -4,6 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database"
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/test_helpers"
 
 	"fmt"
@@ -13,7 +14,7 @@ import (
 )
 
 var tableDBName string
-var rootConfig test_helpers.DatabaseConfig
+var rootConfig database.Config
 
 func TestEnforcer(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -26,7 +27,7 @@ var _ = BeforeSuite(func() {
 
 	initConfig := test_helpers.NewRootDatabaseConfig("")
 
-	db, err := test_helpers.NewDB(initConfig)
+	db, err := database.NewDB(initConfig)
 	Expect(err).ToNot(HaveOccurred())
 	defer db.Close()
 
@@ -35,7 +36,7 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	db, err := test_helpers.NewDB(rootConfig)
+	db, err := database.NewDB(rootConfig)
 	Expect(err).ToNot(HaveOccurred())
 	defer db.Close()
 

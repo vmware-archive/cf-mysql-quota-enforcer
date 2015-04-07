@@ -9,8 +9,8 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 
+	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database"
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database/table"
-	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/test_helpers"
 )
 
 var _ = Describe("Enforcer Integration", func() {
@@ -30,10 +30,10 @@ var _ = Describe("Enforcer Integration", func() {
 		}
 	}
 
-	var userConfig test_helpers.DatabaseConfig
+	var userConfig database.Config
 
 	BeforeEach(func() {
-		userConfig = test_helpers.DatabaseConfig{
+		userConfig = database.Config{
 			Host:     "127.0.0.1",
 			Port:     3306,
 			User:     fmt.Sprintf("diff_user_guid_%d", GinkgoParallelNode()),
@@ -52,7 +52,7 @@ var _ = Describe("Enforcer Integration", func() {
 			)
 
 			BeforeEach(func() {
-				db, err := test_helpers.NewDB(rootConfig)
+				db, err := database.NewDB(rootConfig)
 				Expect(err).NotTo(HaveOccurred())
 				defer db.Close()
 
@@ -73,7 +73,7 @@ var _ = Describe("Enforcer Integration", func() {
 			})
 
 			AfterEach(func() {
-				db, err := test_helpers.NewDB(rootConfig)
+				db, err := database.NewDB(rootConfig)
 				Expect(err).NotTo(HaveOccurred())
 				defer db.Close()
 
@@ -95,7 +95,7 @@ var _ = Describe("Enforcer Integration", func() {
 
 			It("Enforces the quota", func() {
 				By("Revoking write access when over the quota", func() {
-					db, err := test_helpers.NewDB(userConfig)
+					db, err := database.NewDB(userConfig)
 					Expect(err).NotTo(HaveOccurred())
 					defer db.Close()
 
@@ -112,7 +112,7 @@ var _ = Describe("Enforcer Integration", func() {
 				})
 
 				By("Re-enabling write access when back under the quota", func() {
-					db, err := test_helpers.NewDB(userConfig)
+					db, err := database.NewDB(userConfig)
 					Expect(err).NotTo(HaveOccurred())
 					defer db.Close()
 
