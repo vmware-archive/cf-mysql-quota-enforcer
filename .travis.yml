@@ -3,7 +3,7 @@ language: go
 go:
 - 1.4.2
 install:
-- go get -t -v ./...
+- go get -t -v -d ./...
 - go install github.com/onsi/ginkgo/ginkgo
 before_script:
 - export PATH=$HOME/gopath/bin:$PATH
