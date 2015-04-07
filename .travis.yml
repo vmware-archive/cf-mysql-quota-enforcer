@@ -7,6 +7,7 @@ install:
 - go install github.com/onsi/ginkgo/ginkgo
 before_script:
 - export PATH=$HOME/gopath/bin:$PATH
+
 script:
 - ./bin/test-unit
-- bash -c "CONFIG=$(pwd)/integration_config_travis.json ./bin/integration"
+- CONFIG=$PWD/integration_config_travis.json ./bin/test-integration
