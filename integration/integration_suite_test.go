@@ -28,19 +28,17 @@ func TestEnforcer(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
+	initConfig := test_helpers.NewRootDatabaseConfig("")
+
 	brokerDBName = fmt.Sprintf("quota_enforcer_integration_enforcer_test_%d", GinkgoParallelNode())
 	rootConfig = test_helpers.NewRootDatabaseConfig(brokerDBName)
 
-	func() {
-		initConfig := test_helpers.NewRootDatabaseConfig("")
+	initDB, err := database.NewDB(initConfig)
+	Expect(err).ToNot(HaveOccurred())
+	defer initDB.Close()
 
-		db, err := database.NewDB(initConfig)
-		Expect(err).ToNot(HaveOccurred())
-		defer db.Close()
-
-		_, err = db.Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", brokerDBName))
-		Expect(err).ToNot(HaveOccurred())
-	}()
+	_, err = initDB.Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", brokerDBName))
+	Expect(err).ToNot(HaveOccurred())
 
 	db, err := database.NewDB(rootConfig)
 	Expect(err).ToNot(HaveOccurred())
@@ -73,15 +71,19 @@ var _ = AfterSuite(func() {
 		Expect(os.IsExist(err)).To(BeFalse())
 	}
 
-	db, err := database.NewDB(rootConfig)
-	Expect(err).ToNot(HaveOccurred())
-	defer db.Close()
+	var emptyConfig database.Config
+	if rootConfig != emptyConfig {
+		db, err := database.NewDB(rootConfig)
+		Expect(err).ToNot(HaveOccurred())
+		defer db.Close()
 
-	_, err = db.Exec("DROP TABLE IF EXISTS service_instances")
-	Expect(err).ToNot(HaveOccurred())
+		_, err = db.Exec("DROP TABLE IF EXISTS service_instances")
+		Expect(err).ToNot(HaveOccurred())
 
-	_, err = db.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %s", brokerDBName))
-	Expect(err).ToNot(HaveOccurred())
+		_, err = db.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %s", brokerDBName))
+		Expect(err).ToNot(HaveOccurred())
+
+	}
 })
 
 func executeQuotaEnforcer() {

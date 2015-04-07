@@ -10,12 +10,11 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database"
-	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database/table"
 )
 
 var _ = Describe("Enforcer Integration", func() {
 
-	overflowDatabase := func(numRows int, tableName string, db *sql.DB) {
+	createSizedTable := func(numRows int, tableName string, db *sql.DB) {
 		_, err := db.Exec(fmt.Sprintf(
 			`CREATE TABLE %s 
 			(id MEDIUMINT AUTO_INCREMENT, data LONGBLOB, PRIMARY KEY (id))
@@ -46,10 +45,11 @@ var _ = Describe("Enforcer Integration", func() {
 
 	Context("When the quota-enforcer is running", func() {
 		Context("when a user database exists", func() {
-			var (
-				plan         = "fake_plan_guid"
-				maxStorageMB = 10
-				dataTable    = "data_table"
+			const (
+				plan          = "fake_plan_guid"
+				maxStorageMB  = 10
+				dataTableName = "data_table"
+				tempTableName = "temp_table"
 			)
 
 			BeforeEach(func() {
@@ -78,7 +78,10 @@ var _ = Describe("Enforcer Integration", func() {
 				Expect(err).NotTo(HaveOccurred())
 				defer db.Close()
 
-				_, err = db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", userConfig.DBName, dataTable))
+				_, err = db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", userConfig.DBName, dataTableName))
+				Expect(err).NotTo(HaveOccurred())
+
+				_, err = db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", userConfig.DBName, tempTableName))
 				Expect(err).NotTo(HaveOccurred())
 
 				_, err = db.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %s", userConfig.DBName))
@@ -100,15 +103,12 @@ var _ = Describe("Enforcer Integration", func() {
 					Expect(err).NotTo(HaveOccurred())
 					defer db.Close()
 
-					overflowDatabase(maxStorageMB, dataTable, db)
-
-					sizeBytes, err := table.New(userConfig.DBName, dataTable, db).Size()
-					Expect(err).NotTo(HaveOccurred())
-					Expect(sizeBytes).To(BeNumerically(">=", maxStorageMB*1024*1024))
+					createSizedTable(maxStorageMB/2, dataTableName, db)
+					createSizedTable(maxStorageMB/2, tempTableName, db)
 
 					executeQuotaEnforcer()
 
-					_, err = db.Exec(fmt.Sprintf("INSERT INTO %s (data) VALUES (?)", dataTable), []byte{'1'})
+					_, err = db.Exec(fmt.Sprintf("INSERT INTO %s (data) VALUES (?)", dataTableName), []byte{'1'})
 					Expect(err).To(HaveOccurred())
 				})
 
@@ -117,18 +117,12 @@ var _ = Describe("Enforcer Integration", func() {
 					Expect(err).NotTo(HaveOccurred())
 					defer db.Close()
 
-					// InnoDB storage reduces table size better when deleting from the end of the table.
-					// For the record: InnoDB also uses about 0.52MB overhead per table.
-					_, err = db.Exec(fmt.Sprintf("DELETE FROM %s ORDER BY id DESC LIMIT 5", dataTable))
+					_, err = db.Exec(fmt.Sprintf("DROP TABLE %s", tempTableName))
 					Expect(err).NotTo(HaveOccurred())
-
-					sizeBytes, err := table.New(userConfig.DBName, dataTable, db).Size()
-					Expect(err).NotTo(HaveOccurred())
-					Expect(sizeBytes).To(BeNumerically("<", maxStorageMB*1024*1024))
 
 					executeQuotaEnforcer()
 
-					_, err = db.Exec(fmt.Sprintf("INSERT INTO %s (data) VALUES (?)", dataTable), []byte{'1'})
+					_, err = db.Exec(fmt.Sprintf("INSERT INTO %s (data) VALUES (?)", dataTableName), []byte{'1'})
 					Expect(err).NotTo(HaveOccurred())
 				})
 			})
