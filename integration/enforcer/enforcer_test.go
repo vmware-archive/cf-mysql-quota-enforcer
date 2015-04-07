@@ -47,7 +47,7 @@ var _ = Describe("Enforcer Integration", func() {
 		Context("when a user database exists", func() {
 			var (
 				plan         = "fake_plan_guid"
-				maxStorageMB = 3
+				maxStorageMB = 10
 				dataTable    = "data_table"
 			)
 
@@ -118,7 +118,7 @@ var _ = Describe("Enforcer Integration", func() {
 
 					// InnoDB storage reduces table size better when deleting from the end of the table.
 					// For the record: InnoDB also uses about 0.52MB overhead per table.
-					_, err = db.Exec(fmt.Sprintf("DELETE FROM %s ORDER BY id DESC LIMIT 1", dataTable))
+					_, err = db.Exec(fmt.Sprintf("DELETE FROM %s ORDER BY id DESC LIMIT 5", dataTable))
 					Expect(err).NotTo(HaveOccurred())
 
 					sizeBytes, err := table.New(userConfig.DBName, dataTable, db).Size()
