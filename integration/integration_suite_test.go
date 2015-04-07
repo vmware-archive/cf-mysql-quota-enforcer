@@ -56,10 +56,8 @@ func newRootDatabaseConfig(dbName string) config.Config {
 		panic("$DB_USER must be specified")
 	}
 
+	// We allow empty passwords so no need to validate
 	password := os.Getenv("DB_PASSWORD")
-	if password == "" {
-		panic("$DB_PASSWORD must be specified")
-	}
 
 	return config.Config{
 		Host:     host,
