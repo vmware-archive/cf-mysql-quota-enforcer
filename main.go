@@ -26,44 +26,33 @@ type Config struct {
 func main() {
 	flags := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 	daemonize := flags.Bool("d", false, "Daemonize process")
-	brokerDBName := flags.String("brokerDBName", "", "Broker database name (overrides config file)")
+	configFile := flags.String("configFile", "", "Location of config file")
 	cf_lager.AddFlags(flags)
 	flags.Parse(os.Args[1:])
 	logger, _ := cf_lager.New("Quota Enforcer")
 
-	configPath := os.Getenv("CONFIG")
-	if configPath == "" {
-		panic("CONFIG path must be specified")
-	}
-
-	config, err := config.Load(configPath)
+	logger.Info("Config file", lager.Data{"configFile": configFile})
+	config, err := config.Load(*configFile)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	databaseName := config.BrokerDBName
-	if *brokerDBName != "" {
-		databaseName = *brokerDBName
-	}
+	logger.Info(
+		"Database connection established.",
+		lager.Data{
+			"Host":         config.Host,
+			"Port":         config.Port,
+			"User":         config.User,
+			"DatabaseName": config.DBName,
+		})
 
-	logger.Info(fmt.Sprintf(
-		"Connection to database '%s' at '%s:%d' as '%s'",
-		databaseName, config.Host, config.Port, config.User,
-	))
-
-	db, err := database.NewDB(database.Config{
-		Host:     config.Host,
-		Port:     config.Port,
-		User:     config.User,
-		Password: config.Password,
-		DBName:   databaseName,
-	})
+	db, err := database.NewConnection(*config)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	violatorRepo := database.NewViolatorRepo(databaseName, db, logger)
-	reformerRepo := database.NewReformerRepo(databaseName, db, logger)
+	violatorRepo := database.NewViolatorRepo(config.DBName, db, logger)
+	reformerRepo := database.NewReformerRepo(config.DBName, db, logger)
 
 	e := enforcer.NewEnforcer(violatorRepo, reformerRepo)
 

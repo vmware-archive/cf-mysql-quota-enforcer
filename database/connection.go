@@ -3,17 +3,11 @@ package database
 import (
 	"database/sql"
 	"fmt"
+
+	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/config"
 )
 
-type Config struct {
-	Host     string
-	Port     int
-	User     string
-	Password string
-	DBName   string
-}
-
-func NewDB(dbConfig Config) (*sql.DB, error) {
+func NewConnection(dbConfig config.Config) (*sql.DB, error) {
 
 	var userPass string
 	if dbConfig.Password != "" {

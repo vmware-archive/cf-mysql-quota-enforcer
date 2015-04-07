@@ -1,8 +1,9 @@
 package database_test
 
 import (
+	"regexp"
+
 	. "github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database"
-	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/test_helpers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -42,7 +43,7 @@ var _ = Describe("ReformerRepo", func() {
 	Describe("All", func() {
 		var (
 			tableSchemaColumns    = []string{"db"}
-			queryReformersPattern = test_helpers.CompressWhitespace(fmt.Sprintf(`SELECT tables.table_schema AS db
+			queryReformersPattern = compressWhitespace(fmt.Sprintf(`SELECT tables.table_schema AS db
 FROM   information_schema.tables AS tables
 JOIN   \(
            SELECT DISTINCT dbs.Db AS Db from mysql.db AS dbs
@@ -99,3 +100,8 @@ HAVING ROUND\(SUM\(tables.data_length \+ tables.index_length\) / 1024 / 1024, 1\
 		})
 	})
 })
+
+func compressWhitespace(in string) string {
+	whitespacePattern := regexp.MustCompile("\\s+")
+	return whitespacePattern.ReplaceAllString(in, " ")
+}

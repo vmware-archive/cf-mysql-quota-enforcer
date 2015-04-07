@@ -1,12 +1,19 @@
 package enforcer_test
 
 import (
+	"io/ioutil"
+	"path"
+	"path/filepath"
+	"runtime"
+	"strconv"
+
+	"github.com/fraenkel/candiedyaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 
+	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/config"
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database"
-	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/test_helpers"
 
 	"fmt"
 	"testing"
@@ -19,28 +26,64 @@ import (
 )
 
 var brokerDBName string
-var rootConfig database.Config
+var rootConfig config.Config
 var binaryPath string
+
+var configFile string
 
 func TestEnforcer(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Integration Enforcer Suite")
 }
 
+func newRootDatabaseConfig(dbName string) config.Config {
+	host := os.Getenv("DB_HOST")
+	if host == "" {
+		panic("$DB_HOST must be specified")
+	}
+
+	portString := os.Getenv("DB_PORT")
+	if portString == "" {
+		panic("$DB_PORT must be specified")
+	}
+	port, err := strconv.Atoi(portString)
+	if err != nil {
+		panic(err)
+	}
+
+	user := os.Getenv("DB_USER")
+	if user == "" {
+		panic("$DB_USER must be specified")
+	}
+
+	password := os.Getenv("DB_PASSWORD")
+	if password == "" {
+		panic("$DB_PASSWORD must be specified")
+	}
+
+	return config.Config{
+		Host:     host,
+		Port:     port,
+		User:     user,
+		Password: password,
+		DBName:   dbName,
+	}
+}
+
 var _ = BeforeSuite(func() {
-	initConfig := test_helpers.NewRootDatabaseConfig("")
+	initConfig := newRootDatabaseConfig("")
 
 	brokerDBName = fmt.Sprintf("quota_enforcer_integration_enforcer_test_%d", GinkgoParallelNode())
-	rootConfig = test_helpers.NewRootDatabaseConfig(brokerDBName)
+	rootConfig = newRootDatabaseConfig(brokerDBName)
 
-	initDB, err := database.NewDB(initConfig)
+	initDB, err := database.NewConnection(initConfig)
 	Expect(err).ToNot(HaveOccurred())
 	defer initDB.Close()
 
 	_, err = initDB.Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", brokerDBName))
 	Expect(err).ToNot(HaveOccurred())
 
-	db, err := database.NewDB(rootConfig)
+	db, err := database.NewConnection(rootConfig)
 	Expect(err).ToNot(HaveOccurred())
 	defer db.Close()
 
@@ -61,6 +104,12 @@ var _ = BeforeSuite(func() {
 	if err != nil {
 		Expect(os.IsExist(err)).To(BeTrue())
 	}
+
+	tempDir, err := ioutil.TempDir(os.TempDir(), "quota-enforcer-integration-test")
+	Expect(err).NotTo(HaveOccurred())
+
+	configFile = filepath.Join(tempDir, "quotaEnforcerConfig.yml")
+	writeConfig()
 })
 
 var _ = AfterSuite(func() {
@@ -71,9 +120,9 @@ var _ = AfterSuite(func() {
 		Expect(os.IsExist(err)).To(BeFalse())
 	}
 
-	var emptyConfig database.Config
+	var emptyConfig config.Config
 	if rootConfig != emptyConfig {
-		db, err := database.NewDB(rootConfig)
+		db, err := database.NewConnection(rootConfig)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
@@ -89,7 +138,7 @@ var _ = AfterSuite(func() {
 func executeQuotaEnforcer() {
 	command := exec.Command(
 		binaryPath,
-		fmt.Sprintf("-brokerDBName=%s", brokerDBName),
+		fmt.Sprintf("-configFile=%s", configFile),
 		"-logLevel=debug",
 	)
 
@@ -98,4 +147,18 @@ func executeQuotaEnforcer() {
 
 	session.Wait(1 * time.Minute)
 	Expect(session.ExitCode()).To(Equal(0), string(session.Err.Contents()))
+}
+
+func writeConfig() {
+	fileToWrite, err := os.Create(configFile)
+	Expect(err).ShouldNot(HaveOccurred())
+
+	encoder := candiedyaml.NewEncoder(fileToWrite)
+	err = encoder.Encode(rootConfig)
+	Expect(err).ShouldNot(HaveOccurred())
+}
+
+func getDirOfCurrentFile() string {
+	_, filename, _, _ := runtime.Caller(1)
+	return path.Dir(filename)
 }

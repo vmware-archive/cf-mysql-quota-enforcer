@@ -1,36 +1,39 @@
 package config
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
+
+	"github.com/fraenkel/candiedyaml"
 )
 
 type Config struct {
-	Host         string
-	Port         int
-	User         string
-	Password     string
-	BrokerDBName string
+	Host     string
+	Port     int
+	User     string
+	Password string
+	DBName   string
 }
 
-func Load(filePath string) (Config, error) {
-	var config Config
+func Load(filePath string) (*Config, error) {
 	filePath, err := filepath.Abs(filePath)
 	if err != nil {
-		return config, errors.New(fmt.Sprintf("Making config file path absolute: %s", err.Error()))
+		return nil, errors.New(fmt.Sprintf("Making config file path absolute: %s", err.Error()))
 	}
 
-	configBytes, err := ioutil.ReadFile(filePath)
+	file, err := os.Open(filePath)
 	if err != nil {
-		return config, errors.New(fmt.Sprintf("Reading config file: %s", err.Error()))
+		return nil, err
 	}
 
-	err = json.Unmarshal(configBytes, &config)
+	config := new(Config)
+
+	decoder := candiedyaml.NewDecoder(file)
+	err = decoder.Decode(config)
 	if err != nil {
-		return config, errors.New(fmt.Sprintf("Unmarshalling config file: %s", err.Error()))
+		return nil, err
 	}
 
 	return config, nil
