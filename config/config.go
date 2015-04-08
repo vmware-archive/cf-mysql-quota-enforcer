@@ -7,14 +7,15 @@ import (
 	"path/filepath"
 
 	"github.com/fraenkel/candiedyaml"
+	"gopkg.in/validator.v2"
 )
 
 type Config struct {
-	Host     string
-	Port     int
-	User     string
-	Password string
-	DBName   string
+	Host     string `validate:"nonzero"`
+	Port     int    `validate:"nonzero"`
+	User     string `validate:"nonzero"`
+	Password string //blank passwords are allowed
+	DBName   string `validate:"nonzero"`
 }
 
 func Load(filePath string) (*Config, error) {
@@ -36,5 +37,32 @@ func Load(filePath string) (*Config, error) {
 		return nil, err
 	}
 
+	err = validateConfig(*config)
+	if err != nil {
+		return nil, err
+	}
+
 	return config, nil
+}
+
+func validateConfig(config Config) error {
+	err := validator.Validate(config)
+	var errString string
+	if err != nil {
+		errString = formatErrorString(err)
+	}
+
+	if len(errString) > 0 {
+		return errors.New(fmt.Sprintf("Validation errors: %s\n", errString))
+	}
+	return nil
+}
+
+func formatErrorString(err error) string {
+	errs := err.(validator.ErrorMap)
+	var errsString string
+	for fieldName, validationMessage := range errs {
+		errsString += fmt.Sprintf("%s%s : %s\n", fieldName, validationMessage)
+	}
+	return errsString
 }
