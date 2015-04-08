@@ -14,8 +14,8 @@ type Config struct {
 	Host     string `validate:"nonzero"`
 	Port     int    `validate:"nonzero"`
 	User     string `validate:"nonzero"`
-	Password string //blank passwords are allowed
-	DBName   string `validate:"nonzero"`
+	Password string //blank Password is allowed
+	DBName   string //blank DBName is allowed
 }
 
 func Load(filePath string) (*Config, error) {
@@ -37,7 +37,7 @@ func Load(filePath string) (*Config, error) {
 		return nil, err
 	}
 
-	err = validateConfig(*config)
+	err = config.Validate()
 	if err != nil {
 		return nil, err
 	}
@@ -45,8 +45,8 @@ func Load(filePath string) (*Config, error) {
 	return config, nil
 }
 
-func validateConfig(config Config) error {
-	err := validator.Validate(config)
+func (c Config) Validate() error {
+	err := validator.Validate(c)
 	var errString string
 	if err != nil {
 		errString = formatErrorString(err)
@@ -62,7 +62,7 @@ func formatErrorString(err error) string {
 	errs := err.(validator.ErrorMap)
 	var errsString string
 	for fieldName, validationMessage := range errs {
-		errsString += fmt.Sprintf("%s%s : %s\n", fieldName, validationMessage)
+		errsString += fmt.Sprintf("%s : %s\n", fieldName, validationMessage)
 	}
 	return errsString
 }

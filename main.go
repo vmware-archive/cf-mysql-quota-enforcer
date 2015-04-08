@@ -37,22 +37,27 @@ func main() {
 		panic(err.Error())
 	}
 
-	logger.Info(
-		"Database connection established.",
-		lager.Data{
-			"Host":         config.Host,
-			"Port":         config.Port,
-			"User":         config.User,
-			"DatabaseName": config.DBName,
-		})
+	brokerDBName := config.DBName
+	if brokerDBName == "" {
+		logger.Fatal("Must specify DBName in the config file", nil)
+	}
 
 	db, err := database.NewConnection(*config)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	violatorRepo := database.NewViolatorRepo(config.DBName, db, logger)
-	reformerRepo := database.NewReformerRepo(config.DBName, db, logger)
+	logger.Info(
+		"Database connection established.",
+		lager.Data{
+			"Host":         config.Host,
+			"Port":         config.Port,
+			"User":         config.User,
+			"DatabaseName": brokerDBName,
+		})
+
+	violatorRepo := database.NewViolatorRepo(brokerDBName, db, logger)
+	reformerRepo := database.NewReformerRepo(brokerDBName, db, logger)
 
 	e := enforcer.NewEnforcer(violatorRepo, reformerRepo)
 

@@ -123,11 +123,11 @@ var _ = Describe("Config", func() {
 				delete(configToWrite, "DBName")
 			})
 
-			It("returns a validation error", func() {
+			It("allows blank DBName", func() {
 				config, err := Load(configFilePath)
-				Expect(err).To(HaveOccurred())
-				Expect(config).To(BeNil())
-				Expect(err.Error()).To(ContainSubstring("DBName"))
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(config.DBName).To(BeEmpty())
 			})
 		})
 	})

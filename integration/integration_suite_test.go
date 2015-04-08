@@ -37,35 +37,22 @@ func TestEnforcer(t *testing.T) {
 }
 
 func newRootDatabaseConfig(dbName string) config.Config {
-	host := os.Getenv("DB_HOST")
-	if host == "" {
-		panic("$DB_HOST must be specified")
-	}
 
-	portString := os.Getenv("DB_PORT")
-	if portString == "" {
-		panic("$DB_PORT must be specified")
-	}
-	port, err := strconv.Atoi(portString)
-	if err != nil {
-		panic(err)
-	}
+	dbPort, err := strconv.Atoi(os.Getenv("DB_PORT"))
+	Expect(err).ToNot(HaveOccurred())
 
-	user := os.Getenv("DB_USER")
-	if user == "" {
-		panic("$DB_USER must be specified")
-	}
-
-	// We allow empty passwords so no need to validate
-	password := os.Getenv("DB_PASSWORD")
-
-	return config.Config{
-		Host:     host,
-		Port:     port,
-		User:     user,
-		Password: password,
+	dbConfig := config.Config{
+		Host:     os.Getenv("DB_HOST"),
+		Port:     dbPort,
+		User:     os.Getenv("DB_USER"),
+		Password: os.Getenv("DB_PASSWORD"),
 		DBName:   dbName,
 	}
+	err = dbConfig.Validate()
+	errString := "Error generating config. Provide all config properties as environment variable prefixed with 'DB_' (e.g. DB_HOST=localhost)"
+	Expect(err).ToNot(HaveOccurred(), errString)
+
+	return dbConfig
 }
 
 var _ = BeforeSuite(func() {
