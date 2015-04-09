@@ -30,6 +30,7 @@ var brokerDBName string
 var rootConfig config.Config
 var binaryPath string
 
+var tempDir string
 var configFile string
 
 func TestEnforcer(t *testing.T) {
@@ -91,7 +92,7 @@ var _ = BeforeSuite(func() {
 		Expect(os.IsExist(err)).To(BeTrue())
 	}
 
-	tempDir, err := ioutil.TempDir(os.TempDir(), "quota-enforcer-integration-test")
+	tempDir, err = ioutil.TempDir(os.TempDir(), "quota-enforcer-integration-test")
 	Expect(err).NotTo(HaveOccurred())
 
 	configFile = filepath.Join(tempDir, "quotaEnforcerConfig.yml")
@@ -99,6 +100,10 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
+
+	// We don't need to handle an error cleaning up the tempDir
+	_ = os.RemoveAll(tempDir)
+
 	gexec.CleanupBuildArtifacts()
 
 	_, err := os.Stat(binaryPath)
