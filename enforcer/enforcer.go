@@ -2,8 +2,6 @@ package enforcer
 
 import (
 	"fmt"
-	"os"
-	"time"
 
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database"
 	"github.com/pivotal-golang/lager"
@@ -11,7 +9,6 @@ import (
 
 type Enforcer interface {
 	EnforceOnce() error
-	Run(<-chan os.Signal, chan<- struct{}) error
 }
 
 type enforcer struct {
@@ -38,22 +35,6 @@ func (e enforcer) EnforceOnce() error {
 		return err
 	}
 
-	return nil
-}
-
-func (e enforcer) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
-	go func() {
-		for {
-			err := e.EnforceOnce()
-			if err != nil {
-				e.logger.Info(fmt.Sprintf("Enforcing Failed: %s", err.Error()))
-			}
-			time.Sleep(1 * time.Second)
-		}
-	}()
-
-	close(ready)
-	<-signals
 	return nil
 }
 

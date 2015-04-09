@@ -64,6 +64,7 @@ func main() {
 	reformerRepo := database.NewReformerRepo(brokerDBName, db, logger)
 
 	e := enforcer.NewEnforcer(violatorRepo, reformerRepo, logger)
+	r := enforcer.NewRunner(e, logger)
 
 	if *runOnce {
 		logger.Info("Running once")
@@ -73,7 +74,7 @@ func main() {
 			logger.Info(fmt.Sprintf("Quota Enforcing Failed: %s", err.Error()))
 		}
 	} else {
-		process := ifrit.Invoke(e)
+		process := ifrit.Invoke(r)
 		logger.Info("Running continuously")
 
 		err := <-process.Wait()
