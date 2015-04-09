@@ -10,6 +10,7 @@ import (
 	"github.com/fraenkel/candiedyaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/config"
@@ -128,8 +129,6 @@ func startEnforcerWithFlags(flags ...string) *gexec.Session {
 		"-logLevel=debug",
 	)
 
-	fmt.Printf("flags: %#v\n", flags)
-
 	command := exec.Command(
 		binaryPath,
 		flags...,
@@ -138,18 +137,19 @@ func startEnforcerWithFlags(flags ...string) *gexec.Session {
 	session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 	Expect(err).ShouldNot(HaveOccurred())
 
-	// TODO: Ensure some output exists on stdout buffer
-
 	return session
 }
 
 func runEnforcerContinuously() *gexec.Session {
-	return startEnforcerWithFlags()
+	session := startEnforcerWithFlags()
+	Eventually(session.Out).Should(gbytes.Say("Running continuously"))
+	return session
 }
 
 func runEnforcerOnce() {
 	session := startEnforcerWithFlags("-runOnce")
 
+	Eventually(session.Out).Should(gbytes.Say("Running once"))
 	// Wait for the process to finish naturally.
 	// This should not take a long time
 	session.Wait(5 * time.Second)

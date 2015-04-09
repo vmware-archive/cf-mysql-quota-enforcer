@@ -69,8 +69,8 @@ func main() {
 			logger.Info(fmt.Sprintf("Quota Enforcing Failed: %s", err.Error()))
 		}
 	} else {
-		logger.Info("Running continuously")
 		process := ifrit.Invoke(e)
+		logger.Info("Running continuously")
 
 		err := <-process.Wait()
 		if err != nil {
