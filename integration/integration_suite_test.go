@@ -125,7 +125,7 @@ func executeQuotaEnforcer() {
 		binaryPath,
 		fmt.Sprintf("-configFile=%s", configFile),
 		"-logLevel=debug",
-		"-run-once",
+		"-runOnce",
 	)
 
 	session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)

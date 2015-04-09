@@ -25,7 +25,7 @@ type Config struct {
 
 func main() {
 	flags := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
-	runOnce := flags.Bool("run-once", false, "Run only once instead of continuously")
+	runOnce := flags.Bool("runOnce", false, "Run only once instead of continuously")
 	configFile := flags.String("configFile", "", "Location of config file")
 	cf_lager.AddFlags(flags)
 	flags.Parse(os.Args[1:])
