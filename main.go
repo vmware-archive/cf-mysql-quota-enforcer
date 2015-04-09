@@ -86,7 +86,9 @@ func main() {
 			if err != nil {
 				logger.Fatal("Cannot write pid to file", err, lager.Data{"pidFile": pidFile})
 			}
-			logger.Info(fmt.Sprintf("Wrote pidFile to %s", pidFile))
+			logger.Info("Wrote pidFile to %d", lager.Data{
+				"pidFile": pidFile,
+			})
 		}
 
 		err := <-process.Wait()
