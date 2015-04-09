@@ -3,9 +3,11 @@ package enforcer_test
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gexec"
 
 	_ "github.com/go-sql-driver/mysql"
 
@@ -41,10 +43,29 @@ var _ = Describe("Enforcer Integration", func() {
 			Password: "fake_user_password",
 			DBName:   fmt.Sprintf("fake_user_db_name_%d", GinkgoParallelNode()),
 		}
-
 	})
 
-	Context("When the quota-enforcer is running", func() {
+	Describe("Signal handling", func() {
+		Context("when the quota enforcer is running continuously", func() {
+			var session *gexec.Session
+
+			BeforeEach(func() {
+				session = runEnforcerContinuously()
+			})
+
+			It("shuts down on any signal", func() {
+				session.Kill()
+
+				// Once signalled, the session should shut down relatively quickly
+				session.Wait(5 * time.Second)
+
+				// We don't care what the exit code is
+				Eventually(session).Should(gexec.Exit())
+			})
+		})
+	})
+
+	Describe("Quota enforcement", func() {
 		Context("when a user database exists", func() {
 			const (
 				plan          = "fake_plan_guid"
@@ -107,7 +128,7 @@ var _ = Describe("Enforcer Integration", func() {
 					createSizedTable(maxStorageMB/2, dataTableName, db)
 					createSizedTable(maxStorageMB/2, tempTableName, db)
 
-					executeQuotaEnforcer()
+					runEnforcerOnce()
 
 					_, err = db.Exec(fmt.Sprintf("INSERT INTO %s (data) VALUES (?)", dataTableName), []byte{'1'})
 					Expect(err).To(HaveOccurred())
@@ -121,7 +142,7 @@ var _ = Describe("Enforcer Integration", func() {
 					_, err = db.Exec(fmt.Sprintf("DROP TABLE %s", tempTableName))
 					Expect(err).NotTo(HaveOccurred())
 
-					executeQuotaEnforcer()
+					runEnforcerOnce()
 
 					_, err = db.Exec(fmt.Sprintf("INSERT INTO %s (data) VALUES (?)", dataTableName), []byte{'1'})
 					Expect(err).NotTo(HaveOccurred())

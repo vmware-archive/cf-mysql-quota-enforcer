@@ -120,18 +120,39 @@ var _ = AfterSuite(func() {
 	}
 })
 
-func executeQuotaEnforcer() {
-	command := exec.Command(
-		binaryPath,
+func startEnforcerWithFlags(flags ...string) *gexec.Session {
+
+	flags = append(
+		flags,
 		fmt.Sprintf("-configFile=%s", configFile),
 		"-logLevel=debug",
-		"-runOnce",
+	)
+
+	fmt.Printf("flags: %#v\n", flags)
+
+	command := exec.Command(
+		binaryPath,
+		flags...,
 	)
 
 	session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 	Expect(err).ShouldNot(HaveOccurred())
 
-	session.Wait(1 * time.Minute)
+	// TODO: Ensure some output exists on stdout buffer
+
+	return session
+}
+
+func runEnforcerContinuously() *gexec.Session {
+	return startEnforcerWithFlags()
+}
+
+func runEnforcerOnce() {
+	session := startEnforcerWithFlags("-runOnce")
+
+	// Wait for the process to finish naturally.
+	// This should not take a long time
+	session.Wait(5 * time.Second)
 	Expect(session.ExitCode()).To(Equal(0), string(session.Err.Contents()))
 }
 

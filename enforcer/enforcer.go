@@ -42,7 +42,6 @@ func (e enforcer) EnforceOnce() error {
 }
 
 func (e enforcer) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
-
 	go func() {
 		for {
 			err := e.EnforceOnce()
