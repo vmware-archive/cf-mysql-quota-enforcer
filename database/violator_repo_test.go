@@ -7,20 +7,14 @@ import (
 	. "github.com/onsi/gomega"
 
 	"database/sql"
-	"fmt"
-	"regexp"
 
 	"errors"
+
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/pivotal-golang/lager/lagertest"
 )
 
 var _ = Describe("ViolatorRepo", func() {
-
-	var stripExtraSpace = func(in string) string {
-		pattern := regexp.MustCompile("\\s+")
-		return pattern.ReplaceAllString(in, " ")
-	}
 
 	const brokerDBName = "fake_broker_db_name"
 	var (
@@ -45,22 +39,12 @@ var _ = Describe("ViolatorRepo", func() {
 
 	Describe("All", func() {
 		var (
-			tableSchemaColumns    = []string{"db"}
-			queryViolatorsPattern = stripExtraSpace(fmt.Sprintf(`SELECT tables.table_schema AS db
-FROM   information_schema.tables AS tables
-JOIN   \(
-           SELECT DISTINCT dbs.Db AS Db from mysql.db AS dbs
-           WHERE \(dbs.Insert_priv = 'Y' OR dbs.Update_priv = 'Y' OR dbs.Create_priv = 'Y'\)
-       \) AS dbs ON tables.table_schema = dbs.Db
-JOIN   %s.service_instances AS instances ON tables.table_schema = instances.db_name COLLATE utf8_general_ci
-GROUP  BY tables.table_schema
-HAVING ROUND\(SUM\(tables.data_length \+ tables.index_length\) / 1024 / 1024, 1\) >= MAX\(instances.max_storage_mb\)`,
-				brokerDBName,
-			))
+			tableSchemaColumns = []string{"db"}
+			matchAny           = ".*"
 		)
 
 		It("returns a list of databases that have exceeded their quota", func() {
-			sqlmock.ExpectQuery(queryViolatorsPattern).
+			sqlmock.ExpectQuery(matchAny).
 				WithArgs().
 				WillReturnRows(sqlmock.NewRows(tableSchemaColumns).AddRow("fake-database-1").AddRow("fake-database-2"))
 
@@ -75,7 +59,7 @@ HAVING ROUND\(SUM\(tables.data_length \+ tables.index_length\) / 1024 / 1024, 1\
 
 		Context("when there are no violators", func() {
 			BeforeEach(func() {
-				sqlmock.ExpectQuery(queryViolatorsPattern).
+				sqlmock.ExpectQuery(matchAny).
 					WithArgs().
 					WillReturnRows(sqlmock.NewRows(tableSchemaColumns))
 			})
@@ -90,7 +74,7 @@ HAVING ROUND\(SUM\(tables.data_length \+ tables.index_length\) / 1024 / 1024, 1\
 
 		Context("when the db query fails", func() {
 			BeforeEach(func() {
-				sqlmock.ExpectQuery(queryViolatorsPattern).
+				sqlmock.ExpectQuery(matchAny).
 					WithArgs().
 					WillReturnError(errors.New("fake-query-error"))
 			})

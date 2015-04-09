@@ -1,15 +1,12 @@
 package database_test
 
 import (
-	"regexp"
-
 	. "github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	"database/sql"
-	"fmt"
 
 	"errors"
 
@@ -42,22 +39,12 @@ var _ = Describe("ReformerRepo", func() {
 
 	Describe("All", func() {
 		var (
-			tableSchemaColumns    = []string{"db"}
-			queryReformersPattern = compressWhitespace(fmt.Sprintf(`SELECT tables.table_schema AS db
-FROM   information_schema.tables AS tables
-JOIN   \(
-           SELECT DISTINCT dbs.Db AS Db from mysql.db AS dbs
-           WHERE \(dbs.Insert_priv = 'N' OR dbs.Update_priv = 'N' OR dbs.Create_priv = 'N'\)
-       \) AS dbs ON tables.table_schema = dbs.Db
-JOIN   %s.service_instances AS instances ON tables.table_schema = instances.db_name COLLATE utf8_general_ci
-GROUP  BY tables.table_schema
-HAVING ROUND\(SUM\(tables.data_length \+ tables.index_length\) / 1024 / 1024, 1\) < MAX\(instances.max_storage_mb\)`,
-				brokerDBName,
-			))
+			tableSchemaColumns = []string{"db"}
+			matchAny           = ".*"
 		)
 
 		It("returns a list of databases that have come under their quota", func() {
-			sqlmock.ExpectQuery(queryReformersPattern).
+			sqlmock.ExpectQuery(matchAny).
 				WithArgs().
 				WillReturnRows(sqlmock.NewRows(tableSchemaColumns).AddRow("fake-database-1").AddRow("fake-database-2"))
 
@@ -72,7 +59,7 @@ HAVING ROUND\(SUM\(tables.data_length \+ tables.index_length\) / 1024 / 1024, 1\
 
 		Context("when there are no reformers", func() {
 			BeforeEach(func() {
-				sqlmock.ExpectQuery(queryReformersPattern).
+				sqlmock.ExpectQuery(matchAny).
 					WithArgs().
 					WillReturnRows(sqlmock.NewRows(tableSchemaColumns))
 			})
@@ -87,7 +74,7 @@ HAVING ROUND\(SUM\(tables.data_length \+ tables.index_length\) / 1024 / 1024, 1\
 
 		Context("when the db query fails", func() {
 			BeforeEach(func() {
-				sqlmock.ExpectQuery(queryReformersPattern).
+				sqlmock.ExpectQuery(matchAny).
 					WithArgs().
 					WillReturnError(errors.New("fake-query-error"))
 			})
@@ -100,8 +87,3 @@ HAVING ROUND\(SUM\(tables.data_length \+ tables.index_length\) / 1024 / 1024, 1\
 		})
 	})
 })
-
-func compressWhitespace(in string) string {
-	whitespacePattern := regexp.MustCompile("\\s+")
-	return whitespacePattern.ReplaceAllString(in, " ")
-}
