@@ -6,8 +6,10 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 
 	"github.com/fraenkel/candiedyaml"
+	"github.com/nu7hatch/gouuid"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -51,8 +53,7 @@ func newRootDatabaseConfig(dbName string) config.Config {
 		DBName:   dbName,
 	}
 	err = dbConfig.Validate()
-	errString := "Error generating config. Provide all config properties as environment variable prefixed with 'DB_' (e.g. DB_HOST=localhost)"
-	Expect(err).ToNot(HaveOccurred(), errString)
+	Expect(err).ToNot(HaveOccurred())
 
 	return dbConfig
 }
@@ -60,7 +61,7 @@ func newRootDatabaseConfig(dbName string) config.Config {
 var _ = BeforeSuite(func() {
 	initConfig := newRootDatabaseConfig("")
 
-	brokerDBName = fmt.Sprintf("quota_enforcer_integration_enforcer_test_%d", GinkgoParallelNode())
+	brokerDBName = uuidWithUnderscores("db")
 	rootConfig = newRootDatabaseConfig(brokerDBName)
 
 	initDB, err := database.NewConnection(initConfig)
@@ -172,4 +173,11 @@ func writeConfig() {
 func getDirOfCurrentFile() string {
 	_, filename, _, _ := runtime.Caller(1)
 	return path.Dir(filename)
+}
+
+func uuidWithUnderscores(prefix string) string {
+	id, err := uuid.NewV4()
+	Expect(err).ToNot(HaveOccurred())
+	idString := fmt.Sprintf("%s_%s", prefix, id.String())
+	return strings.Replace(idString, "-", "_", -1)
 }

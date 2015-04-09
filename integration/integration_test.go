@@ -39,12 +39,14 @@ var _ = Describe("Enforcer Integration", func() {
 
 	BeforeEach(func() {
 		userConfig = config.Config{
-			Host:     "127.0.0.1",
-			Port:     3306,
-			User:     fmt.Sprintf("diff_user_guid_%d", GinkgoParallelNode()),
-			Password: "fake_user_password",
-			DBName:   fmt.Sprintf("fake_user_db_name_%d", GinkgoParallelNode()),
+			Host:     rootConfig.Host,
+			Port:     rootConfig.Port,
+			User:     uuidWithUnderscores("user")[:16], // MySQL mandates usernames are <= 16 chars
+			Password: uuidWithUnderscores("password"),
+			DBName:   uuidWithUnderscores("db"),
 		}
+		err := userConfig.Validate()
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	Describe("Writing pid file", func() {
@@ -116,14 +118,21 @@ var _ = Describe("Enforcer Integration", func() {
 	})
 
 	Describe("Quota enforcement", func() {
-		Context("when a user database exists", func() {
-			const (
-				plan          = "fake_plan_guid"
-				maxStorageMB  = 10
-				dataTableName = "data_table"
-				tempTableName = "temp_table"
-			)
+		var (
+			plan          string
+			maxStorageMB  int
+			dataTableName string
+			tempTableName string
+		)
 
+		BeforeEach(func() {
+			plan = uuidWithUnderscores("plan")
+			maxStorageMB = 10
+			dataTableName = uuidWithUnderscores("data")
+			tempTableName = uuidWithUnderscores("temp")
+		})
+
+		Context("when a user database exists", func() {
 			BeforeEach(func() {
 				db, err := database.NewConnection(rootConfig)
 				Expect(err).NotTo(HaveOccurred())
