@@ -122,7 +122,6 @@ var _ = AfterSuite(func() {
 
 		_, err = db.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %s", brokerDBName))
 		Expect(err).ToNot(HaveOccurred())
-
 	}
 })
 

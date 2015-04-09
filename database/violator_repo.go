@@ -1,9 +1,8 @@
 package database
 
 import (
-	"fmt"
-
 	"database/sql"
+	"fmt"
 
 	"github.com/pivotal-golang/lager"
 )

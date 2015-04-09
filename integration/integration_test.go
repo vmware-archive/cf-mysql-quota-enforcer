@@ -198,6 +198,34 @@ var _ = Describe("Enforcer Integration", func() {
 					Expect(err).NotTo(HaveOccurred())
 				})
 			})
+
+			It("restores write access after dropping all tables", func() {
+				db, err := database.NewConnection(userConfig)
+				Expect(err).NotTo(HaveOccurred())
+				defer db.Close()
+
+				By("Revoking write access when over quota", func() {
+
+					createSizedTable(maxStorageMB, dataTableName, db)
+
+					runEnforcerOnce()
+
+					_, err = db.Exec(fmt.Sprintf("INSERT INTO %s (data) VALUES (?)", dataTableName), []byte{'1'})
+					Expect(err).To(HaveOccurred())
+				})
+
+				By("Re-enabling write access when back under the quota", func() {
+					_, err := db.Exec(fmt.Sprintf("DROP TABLE %s", dataTableName))
+					Expect(err).NotTo(HaveOccurred())
+
+					runEnforcerOnce()
+
+					createSizedTable(maxStorageMB/2, dataTableName, db)
+					_, err = db.Exec(fmt.Sprintf("INSERT INTO %s (data) VALUES (?)", dataTableName), []byte{'1'})
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+			})
 		})
 	})
 })
