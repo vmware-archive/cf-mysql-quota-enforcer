@@ -43,6 +43,10 @@ func main() {
 	}
 
 	db, err := database.NewConnection(*config)
+	if db != nil {
+		defer db.Close()
+	}
+
 	if err != nil {
 		panic(err.Error())
 	}
