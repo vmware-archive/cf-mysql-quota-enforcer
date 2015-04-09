@@ -34,7 +34,7 @@ func main() {
 	logger.Info("Config file", lager.Data{"configFile": configFile})
 	config, err := config.Load(*configFile)
 	if err != nil {
-		panic(err.Error())
+		logger.Fatal("Failed to load config file", err)
 	}
 
 	brokerDBName := config.DBName
@@ -48,7 +48,7 @@ func main() {
 	}
 
 	if err != nil {
-		panic(err.Error())
+		logger.Fatal("Failed to open database connection", err)
 	}
 
 	logger.Info(
