@@ -3,10 +3,12 @@ package enforcer_test
 import (
 	"database/sql"
 	"fmt"
+	"os"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -43,6 +45,54 @@ var _ = Describe("Enforcer Integration", func() {
 			Password: "fake_user_password",
 			DBName:   fmt.Sprintf("fake_user_db_name_%d", GinkgoParallelNode()),
 		}
+	})
+
+	Describe("Writing pid file", func() {
+		Context("when the quota enforcer is running continuously", func() {
+			var (
+				session     *gexec.Session
+				pidFile     string
+				pidFileFlag string
+			)
+
+			Context("when the pid file location is valid", func() {
+				BeforeEach(func() {
+					pidFile = fmt.Sprintf("%s/enforcer.pid", tempDir)
+					pidFileFlag = fmt.Sprintf("-pidFile=%s", pidFile)
+				})
+
+				It("writes its pid to the provided file", func() {
+					Expect(fileExists(pidFile)).To(BeFalse())
+					session = runEnforcerContinuously(pidFileFlag)
+					Expect(fileExists(pidFile)).To(BeTrue())
+				})
+
+				AfterEach(func() {
+					session.Kill()
+
+					// Once signalled, the session should shut down relatively quickly
+					session.Wait(5 * time.Second)
+
+					// We don't care what the exit code is
+					Eventually(session).Should(gexec.Exit())
+				})
+			})
+
+			Context("when the pid file location is invalid", func() {
+				BeforeEach(func() {
+					pidFile = "/invalid_path/enforcer.pid"
+					pidFileFlag = fmt.Sprintf("-pidFile=%s", pidFile)
+				})
+
+				It("exits with error", func() {
+					session = runEnforcerContinuously(pidFileFlag)
+
+					Eventually(session.Err).Should(gbytes.Say(pidFile))
+					Eventually(session).Should(gexec.Exit())
+					Expect(session.ExitCode()).ToNot(Equal(0))
+				})
+			})
+		})
 	})
 
 	Describe("Signal handling", func() {
@@ -151,3 +201,8 @@ var _ = Describe("Enforcer Integration", func() {
 		})
 	})
 })
+
+func fileExists(filename string) bool {
+	_, err := os.Stat(filename)
+	return err == nil
+}

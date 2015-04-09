@@ -3,7 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"strconv"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/tedsuo/ifrit"
@@ -27,6 +29,7 @@ func main() {
 	flags := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 	runOnce := flags.Bool("runOnce", false, "Run only once instead of continuously")
 	configFile := flags.String("configFile", "config.yml", "Location of config file")
+	pidFile := flags.String("pidFile", "", "Location of pid file")
 	cf_lager.AddFlags(flags)
 	flags.Parse(os.Args[1:])
 	logger, _ := cf_lager.New("Quota Enforcer")
@@ -77,6 +80,15 @@ func main() {
 		process := ifrit.Invoke(r)
 		logger.Info("Running continuously")
 
+		// Write pid file once we are running continuously
+		if *pidFile != "" {
+			err = writePidFile(*pidFile)
+			if err != nil {
+				logger.Fatal("Cannot write pid to file", err, lager.Data{"pidFile": pidFile})
+			}
+			logger.Info(fmt.Sprintf("Wrote pidFile to %s", pidFile))
+		}
+
 		err := <-process.Wait()
 		if err != nil {
 			logger.Fatal("Quota Enforcing Failed", err)
@@ -90,4 +102,8 @@ func enforce(e enforcer.Enforcer, logger lager.Logger) {
 	if err != nil {
 		logger.Info(fmt.Sprintf("Enforcing Failed: %s", err.Error()))
 	}
+}
+
+func writePidFile(pidFile string) error {
+	return ioutil.WriteFile(pidFile, []byte(strconv.Itoa(os.Getpid())), 0644)
 }

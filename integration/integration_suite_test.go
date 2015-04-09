@@ -145,8 +145,8 @@ func startEnforcerWithFlags(flags ...string) *gexec.Session {
 	return session
 }
 
-func runEnforcerContinuously() *gexec.Session {
-	session := startEnforcerWithFlags()
+func runEnforcerContinuously(flags ...string) *gexec.Session {
+	session := startEnforcerWithFlags(flags...)
 	Eventually(session.Out).Should(gbytes.Say("Running continuously"))
 	return session
 }
