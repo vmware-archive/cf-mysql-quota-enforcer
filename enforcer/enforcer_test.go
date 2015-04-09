@@ -4,25 +4,30 @@ import (
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database"
 	databasefakes "github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database/fakes"
 	. "github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/enforcer"
+	"github.com/pivotal-golang/lager/lagertest"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Enforcer", func() {
-	var enforcer Enforcer
-	var fakeViolatorRepo *databasefakes.FakeRepo
-	var fakeReformerRepo *databasefakes.FakeRepo
+	var (
+		enforcer         Enforcer
+		fakeViolatorRepo *databasefakes.FakeRepo
+		fakeReformerRepo *databasefakes.FakeRepo
+		logger           *lagertest.TestLogger
+	)
 
 	BeforeEach(func() {
+		logger = lagertest.NewTestLogger("Enforcer test")
 		fakeViolatorRepo = &databasefakes.FakeRepo{}
 		fakeReformerRepo = &databasefakes.FakeRepo{}
-		enforcer = NewEnforcer(fakeViolatorRepo, fakeReformerRepo)
+		enforcer = NewEnforcer(fakeViolatorRepo, fakeReformerRepo, logger)
 	})
 
 	Context("when there are no violators", func() {
 		It("does not revoke privileges for anyone", func() {
-			err := enforcer.Enforce()
+			err := enforcer.EnforceOnce()
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(fakeViolatorRepo.AllCallCount()).To(Equal(1))
@@ -41,7 +46,7 @@ var _ = Describe("Enforcer", func() {
 		})
 
 		It("revokes privileges on the violators", func() {
-			err := enforcer.Enforce()
+			err := enforcer.EnforceOnce()
 			Expect(err).NotTo(HaveOccurred())
 
 			for _, db := range fakeViolators {
@@ -54,7 +59,7 @@ var _ = Describe("Enforcer", func() {
 
 	Context("when there are no reformers", func() {
 		It("does not grant privileges for anyone", func() {
-			err := enforcer.Enforce()
+			err := enforcer.EnforceOnce()
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(fakeReformerRepo.AllCallCount()).To(Equal(1))
@@ -73,7 +78,7 @@ var _ = Describe("Enforcer", func() {
 		})
 
 		It("grants privileges on the reformers", func() {
-			err := enforcer.Enforce()
+			err := enforcer.EnforceOnce()
 			Expect(err).NotTo(HaveOccurred())
 
 			for _, db := range fakeReformers {

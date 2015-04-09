@@ -4,9 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/tedsuo/ifrit"
 
 	"github.com/cloudfoundry-incubator/cf-lager"
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/config"
@@ -59,25 +59,29 @@ func main() {
 	violatorRepo := database.NewViolatorRepo(brokerDBName, db, logger)
 	reformerRepo := database.NewReformerRepo(brokerDBName, db, logger)
 
-	e := enforcer.NewEnforcer(violatorRepo, reformerRepo)
+	e := enforcer.NewEnforcer(violatorRepo, reformerRepo, logger)
 
 	if *runOnce {
 		logger.Info("Running once")
-		enforce(e, logger)
+
+		err := e.EnforceOnce()
+		if err != nil {
+			logger.Info(fmt.Sprintf("Quota Enforcing Failed: %s", err.Error()))
+		}
 	} else {
 		logger.Info("Running continuously")
-		func() {
-			for {
-				enforce(e, logger)
-				time.Sleep(1 * time.Second)
-			}
-		}()
+		process := ifrit.Invoke(e)
+
+		err := <-process.Wait()
+		if err != nil {
+			logger.Fatal("Quota Enforcing Failed", err)
+		}
 	}
 }
 
 func enforce(e enforcer.Enforcer, logger lager.Logger) {
 	logger.Info("Enforcing")
-	err := e.Enforce()
+	err := e.EnforceOnce()
 	if err != nil {
 		logger.Info(fmt.Sprintf("Enforcing Failed: %s", err.Error()))
 	}
