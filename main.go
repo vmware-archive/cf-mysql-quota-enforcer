@@ -26,7 +26,7 @@ type Config struct {
 func main() {
 	flags := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 	runOnce := flags.Bool("runOnce", false, "Run only once instead of continuously")
-	configFile := flags.String("configFile", "", "Location of config file")
+	configFile := flags.String("configFile", "config.yml", "Location of config file")
 	cf_lager.AddFlags(flags)
 	flags.Parse(os.Args[1:])
 	logger, _ := cf_lager.New("Quota Enforcer")
