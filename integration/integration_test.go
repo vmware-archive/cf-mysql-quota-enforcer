@@ -156,10 +156,11 @@ var _ = Describe("Enforcer Integration", func() {
 
 	Describe("Quota enforcement", func() {
 		var (
-			plan          string
-			maxStorageMB  int
-			dataTableName string
-			tempTableName string
+			plan                string
+			maxStorageMB        int
+			dataTableName       string
+			tempTableName       string
+			unimpactedTableName string
 		)
 
 		BeforeEach(func() {
@@ -167,9 +168,14 @@ var _ = Describe("Enforcer Integration", func() {
 			maxStorageMB = 10
 			dataTableName = uuidWithUnderscores("data")
 			tempTableName = uuidWithUnderscores("temp")
+			unimpactedTableName = uuidWithUnderscores("unimpacted")
 		})
 
-		Context("when a database exists with multiple users", func() {
+		Context("when multiple databases exist with multiple users", func() {
+			var (
+				user0Connection, user1Connection, user2Connection *sql.DB
+			)
+
 			BeforeEach(func() {
 				db, err := database.NewConnection(rootConfig)
 				Expect(err).NotTo(HaveOccurred())
@@ -197,6 +203,15 @@ var _ = Describe("Enforcer Integration", func() {
 					_, err = db.Exec("FLUSH PRIVILEGES")
 					Expect(err).NotTo(HaveOccurred())
 				}
+
+				user0Connection, err = database.NewConnection(userConfigs[0])
+				Expect(err).NotTo(HaveOccurred())
+
+				user1Connection, err = database.NewConnection(userConfigs[1])
+				Expect(err).NotTo(HaveOccurred())
+
+				user2Connection, err = database.NewConnection(userConfigs[2])
+				Expect(err).NotTo(HaveOccurred())
 			})
 
 			AfterEach(func() {
@@ -231,52 +246,54 @@ var _ = Describe("Enforcer Integration", func() {
 						"FLUSH PRIVILEGES")
 					Expect(err).NotTo(HaveOccurred())
 				}
+
+				defer user0Connection.Close()
+				defer user1Connection.Close()
+				defer user2Connection.Close()
 			})
 
-			It("Enforces the quota for all users on the same database", func() {
+			It("Enforces the quota for all users on the same database and does not impact other users on other databases", func() {
 				By("Revoking write access when over the quota", func() {
-					user0Connection, err := database.NewConnection(userConfigs[0])
-					Expect(err).NotTo(HaveOccurred())
-					defer user0Connection.Close()
-
 					createSizedTable(maxStorageMB/2, dataTableName, user0Connection)
 					createSizedTable(maxStorageMB/2, tempTableName, user0Connection)
 
+					createSizedTable(maxStorageMB/2, unimpactedTableName, user2Connection)
+
 					runEnforcerOnce()
 
-					_, err = user0Connection.Exec(fmt.Sprintf(
+					// Users 0 and 1 cannot write to db 0
+					_, err := user0Connection.Exec(fmt.Sprintf(
 						"INSERT INTO %s (data) VALUES (?)", dataTableName), []byte{'1'})
 					Expect(err).To(HaveOccurred())
-
-					user1Connection, err := database.NewConnection(userConfigs[1])
-					Expect(err).NotTo(HaveOccurred())
-					defer user1Connection.Close()
 
 					_, err = user1Connection.Exec(fmt.Sprintf(
 						"INSERT INTO %s (data) VALUES (?)", dataTableName), []byte{'1'})
 					Expect(err).To(HaveOccurred())
+
+					// User 2 can still write to db 1
+					_, err = user2Connection.Exec(fmt.Sprintf(
+						"INSERT INTO %s (data) VALUES (?)", unimpactedTableName), []byte{'1'})
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				By("Re-enabling write access when back under the quota", func() {
-					user0Connection, err := database.NewConnection(userConfigs[0])
-					Expect(err).NotTo(HaveOccurred())
-					defer user0Connection.Close()
-
-					_, err = user0Connection.Exec(fmt.Sprintf("DROP TABLE %s", tempTableName))
+					_, err := user0Connection.Exec(fmt.Sprintf("DROP TABLE %s", tempTableName))
 					Expect(err).NotTo(HaveOccurred())
 
 					runEnforcerOnce()
 
+					// Users 0 and 1 can now write to db 0
 					_, err = user0Connection.Exec(fmt.Sprintf(
 						"INSERT INTO %s (data) VALUES (?)", dataTableName), []byte{'1'})
 					Expect(err).NotTo(HaveOccurred())
 
-					user1Connection, err := database.NewConnection(userConfigs[1])
-					Expect(err).NotTo(HaveOccurred())
-					defer user1Connection.Close()
-
 					_, err = user1Connection.Exec(fmt.Sprintf(
 						"INSERT INTO %s (data) VALUES (?)", dataTableName), []byte{'1'})
+					Expect(err).NotTo(HaveOccurred())
+
+					// User 2 can still write to db 1
+					_, err = user2Connection.Exec(fmt.Sprintf(
+						"INSERT INTO %s (data) VALUES (?)", unimpactedTableName), []byte{'1'})
 					Expect(err).NotTo(HaveOccurred())
 				})
 			})
