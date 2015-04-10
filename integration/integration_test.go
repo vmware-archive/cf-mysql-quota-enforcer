@@ -19,8 +19,23 @@ import (
 
 var _ = Describe("Enforcer Integration", func() {
 
-	createSizedTable := func(numRows int, tableName string, db *sql.DB) {
-		_, err := db.Exec(fmt.Sprintf(
+    var exec = func(db *sql.DB, query string, args ...interface{}) (sql.Result, error) {
+        GinkgoWriter.Write([]byte(fmt.Sprintf("EXEC SQL: %s\n", query)))
+        return db.Exec(query, args...)
+    }
+
+    var tableSizeMB = func(dbName, tableName string, db *sql.DB) float64 {
+        var sizeMB float64
+        row := db.QueryRow(`SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 1)
+            FROM information_schema.TABLES
+            WHERE table_schema = ? AND table_name = ?`, dbName, tableName)
+        err := row.Scan(&sizeMB)
+        Expect(err).ToNot(HaveOccurred())
+        return sizeMB
+    }
+
+	var createSizedTable = func(numRows int, dbName, tableName string, db *sql.DB) {
+		_, err := exec(db, fmt.Sprintf(
 			`CREATE TABLE %s 
 			(id MEDIUMINT AUTO_INCREMENT, data LONGBLOB, PRIMARY KEY (id))
 			ENGINE = INNODB`,
@@ -30,10 +45,18 @@ var _ = Describe("Enforcer Integration", func() {
 
 		data := make([]byte, 1024*1024)
 		for row := 0; row < numRows; row++ {
-			_, err = db.Exec(fmt.Sprintf("INSERT INTO %s (data) VALUES (?)", tableName), data)
+			_, err = exec(db, fmt.Sprintf("INSERT INTO %s (data) VALUES (?)", tableName), data)
 			Expect(err).NotTo(HaveOccurred())
 		}
-	}
+
+        // Optimizing forces the size metadata to update (normally happens every few seconds)
+        _, err = exec(db, fmt.Sprintf("OPTIMIZE TABLE %s", tableName))
+        Expect(err).ToNot(HaveOccurred())
+
+        // Check that the table size matches our expectations
+        // If this doesn't work, then the quota enforcer isn't going to work either...
+        Expect(tableSizeMB(dbName, tableName, db)).To(BeNumerically(">=", numRows))
+    }
 
 	var userConfigs []config.Config
 	var dbNames []string
@@ -182,25 +205,25 @@ var _ = Describe("Enforcer Integration", func() {
 				defer db.Close()
 
 				for _, dbName := range dbNames {
-					_, err = db.Exec(fmt.Sprintf(
+					_, err = exec(db, fmt.Sprintf(
 						"CREATE DATABASE IF NOT EXISTS %s", dbName))
 					Expect(err).NotTo(HaveOccurred())
 
-					_, err = db.Exec(
-						"INSERT INTO service_instances (guid,plan_guid,max_storage_mb,db_name) VALUES(?,?,?,?)", dbName, plan, maxStorageMB, dbName)
+					_, err = exec(db,
+                        "INSERT INTO service_instances (guid,plan_guid,max_storage_mb,db_name) VALUES(?,?,?,?)", dbName, plan, maxStorageMB, dbName)
 					Expect(err).NotTo(HaveOccurred())
 				}
 
 				for _, userConfig := range userConfigs {
-					_, err = db.Exec(fmt.Sprintf(
+					_, err = exec(db, fmt.Sprintf(
 						"CREATE USER %s IDENTIFIED BY '%s'", userConfig.User, userConfig.Password))
 					Expect(err).NotTo(HaveOccurred())
 
-					_, err = db.Exec(fmt.Sprintf(
+					_, err = exec(db, fmt.Sprintf(
 						"GRANT ALL PRIVILEGES ON %s.* TO %s", userConfig.DBName, userConfig.User))
 					Expect(err).NotTo(HaveOccurred())
 
-					_, err = db.Exec("FLUSH PRIVILEGES")
+					_, err = exec(db, "FLUSH PRIVILEGES")
 					Expect(err).NotTo(HaveOccurred())
 				}
 
@@ -220,29 +243,29 @@ var _ = Describe("Enforcer Integration", func() {
 				defer db.Close()
 
 				for _, dbName := range dbNames {
-					_, err = db.Exec(fmt.Sprintf(
+					_, err = exec(db, fmt.Sprintf(
 						"DROP DATABASE IF EXISTS %s", dbName))
 					Expect(err).NotTo(HaveOccurred())
 				}
 
 				for _, userConfig := range userConfigs {
-					_, err = db.Exec(fmt.Sprintf(
+					_, err = exec(db, fmt.Sprintf(
 						"DROP TABLE IF EXISTS %s.%s", userConfig.DBName, dataTableName))
 					Expect(err).NotTo(HaveOccurred())
 
-					_, err = db.Exec(fmt.Sprintf(
+					_, err = exec(db, fmt.Sprintf(
 						"DROP TABLE IF EXISTS %s.%s", userConfig.DBName, tempTableName))
 					Expect(err).NotTo(HaveOccurred())
 
-					_, err = db.Exec(fmt.Sprintf(
+					_, err = exec(db, fmt.Sprintf(
 						"REVOKE ALL PRIVILEGES, GRANT OPTION FROM %s", userConfig.User))
 					Expect(err).NotTo(HaveOccurred())
 
-					_, err = db.Exec(fmt.Sprintf(
+					_, err = exec(db, fmt.Sprintf(
 						"DROP USER %s", userConfig.User))
 					Expect(err).NotTo(HaveOccurred())
 
-					_, err = db.Exec(
+					_, err = exec(db,
 						"FLUSH PRIVILEGES")
 					Expect(err).NotTo(HaveOccurred())
 				}
@@ -254,10 +277,10 @@ var _ = Describe("Enforcer Integration", func() {
 
 			It("Enforces the quota for all users on the same database and does not impact other users on other databases", func() {
 				By("Revoking write access when over the quota", func() {
-					createSizedTable(maxStorageMB/2, dataTableName, user0Connection)
-					createSizedTable(maxStorageMB/2, tempTableName, user0Connection)
+					createSizedTable(maxStorageMB/2, userConfigs[0].DBName, dataTableName, user0Connection)
+					createSizedTable(maxStorageMB/2, userConfigs[0].DBName, tempTableName, user0Connection)
 
-					createSizedTable(maxStorageMB/2, unimpactedTableName, user2Connection)
+					createSizedTable(maxStorageMB/2, userConfigs[2].DBName, unimpactedTableName, user2Connection)
 
 					runEnforcerOnce()
 
@@ -304,25 +327,24 @@ var _ = Describe("Enforcer Integration", func() {
 				defer db.Close()
 
 				By("Revoking write access when over quota", func() {
-
-					createSizedTable(maxStorageMB, dataTableName, db)
+					createSizedTable(maxStorageMB, userConfigs[0].DBName, dataTableName, db)
 
 					runEnforcerOnce()
 
-					_, err = db.Exec(fmt.Sprintf(
+					_, err = exec(db, fmt.Sprintf(
 						"INSERT INTO %s (data) VALUES (?)", dataTableName), []byte{'1'})
 					Expect(err).To(HaveOccurred())
 				})
 
 				By("Re-enabling write access when back under the quota", func() {
-					_, err := db.Exec(fmt.Sprintf(
+					_, err := exec(db, fmt.Sprintf(
 						"DROP TABLE %s", dataTableName))
 					Expect(err).NotTo(HaveOccurred())
 
 					runEnforcerOnce()
 
-					createSizedTable(maxStorageMB/2, dataTableName, db)
-					_, err = db.Exec(fmt.Sprintf(
+					createSizedTable(maxStorageMB/2, userConfigs[0].DBName, dataTableName, db)
+					_, err = exec(db, fmt.Sprintf(
 						"INSERT INTO %s (data) VALUES (?)", dataTableName), []byte{'1'})
 					Expect(err).NotTo(HaveOccurred())
 				})
