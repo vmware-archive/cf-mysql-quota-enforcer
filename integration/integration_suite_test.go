@@ -2,9 +2,7 @@ package enforcer_test
 
 import (
 	"io/ioutil"
-	"path"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 
@@ -168,11 +166,6 @@ func writeConfig() {
 	encoder := candiedyaml.NewEncoder(fileToWrite)
 	err = encoder.Encode(rootConfig)
 	Expect(err).ShouldNot(HaveOccurred())
-}
-
-func getDirOfCurrentFile() string {
-	_, filename, _, _ := runtime.Caller(1)
-	return path.Dir(filename)
 }
 
 func uuidWithUnderscores(prefix string) string {
