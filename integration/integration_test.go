@@ -35,18 +35,55 @@ var _ = Describe("Enforcer Integration", func() {
 		}
 	}
 
-	var userConfig config.Config
+	var userConfigs []config.Config
+	var dbNames []string
 
 	BeforeEach(func() {
-		userConfig = config.Config{
+		// MySQL mandates usernames are <= 16 chars
+		user0 := uuidWithUnderscores("user")[:16]
+		user1 := uuidWithUnderscores("user")[:16]
+		user2 := uuidWithUnderscores("user")[:16]
+
+		dbNames = []string{
+			uuidWithUnderscores("cf"),
+			uuidWithUnderscores("cf"),
+		}
+
+		user0Config := config.Config{
 			Host:     rootConfig.Host,
 			Port:     rootConfig.Port,
-			User:     uuidWithUnderscores("user")[:16], // MySQL mandates usernames are <= 16 chars
+			User:     user0,
 			Password: uuidWithUnderscores("password"),
-			DBName:   uuidWithUnderscores("db"),
+			DBName:   dbNames[0],
 		}
-		err := userConfig.Validate()
+		err := user0Config.Validate()
 		Expect(err).ToNot(HaveOccurred())
+
+		user1Config := config.Config{
+			Host:     rootConfig.Host,
+			Port:     rootConfig.Port,
+			User:     user1,
+			Password: uuidWithUnderscores("password"),
+			DBName:   dbNames[0],
+		}
+		err = user1Config.Validate()
+		Expect(err).ToNot(HaveOccurred())
+
+		user2Config := config.Config{
+			Host:     rootConfig.Host,
+			Port:     rootConfig.Port,
+			User:     user2,
+			Password: uuidWithUnderscores("password"),
+			DBName:   dbNames[1],
+		}
+		err = user2Config.Validate()
+		Expect(err).ToNot(HaveOccurred())
+
+		userConfigs = []config.Config{
+			user0Config,
+			user1Config,
+			user2Config,
+		}
 	})
 
 	Describe("Writing pid file", func() {
@@ -132,26 +169,34 @@ var _ = Describe("Enforcer Integration", func() {
 			tempTableName = uuidWithUnderscores("temp")
 		})
 
-		Context("when a user database exists", func() {
+		Context("when a database exists with multiple users", func() {
 			BeforeEach(func() {
 				db, err := database.NewConnection(rootConfig)
 				Expect(err).NotTo(HaveOccurred())
 				defer db.Close()
 
-				_, err = db.Exec(fmt.Sprintf("CREATE USER %s IDENTIFIED BY '%s'", userConfig.User, userConfig.Password))
-				Expect(err).NotTo(HaveOccurred())
+				for _, dbName := range dbNames {
+					_, err = db.Exec(fmt.Sprintf(
+						"CREATE DATABASE IF NOT EXISTS %s", dbName))
+					Expect(err).NotTo(HaveOccurred())
 
-				_, err = db.Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", userConfig.DBName))
-				Expect(err).NotTo(HaveOccurred())
+					_, err = db.Exec(
+						"INSERT INTO service_instances (guid,plan_guid,max_storage_mb,db_name) VALUES(?,?,?,?)", dbName, plan, maxStorageMB, dbName)
+					Expect(err).NotTo(HaveOccurred())
+				}
 
-				_, err = db.Exec("INSERT INTO service_instances (guid,plan_guid,max_storage_mb,db_name) VALUES(?,?,?,?)", userConfig.User, plan, maxStorageMB, userConfig.DBName)
-				Expect(err).NotTo(HaveOccurred())
+				for _, userConfig := range userConfigs {
+					_, err = db.Exec(fmt.Sprintf(
+						"CREATE USER %s IDENTIFIED BY '%s'", userConfig.User, userConfig.Password))
+					Expect(err).NotTo(HaveOccurred())
 
-				_, err = db.Exec(fmt.Sprintf("GRANT ALL PRIVILEGES ON %s.* TO %s", userConfig.DBName, userConfig.User))
-				Expect(err).NotTo(HaveOccurred())
+					_, err = db.Exec(fmt.Sprintf(
+						"GRANT ALL PRIVILEGES ON %s.* TO %s", userConfig.DBName, userConfig.User))
+					Expect(err).NotTo(HaveOccurred())
 
-				_, err = db.Exec("FLUSH PRIVILEGES")
-				Expect(err).NotTo(HaveOccurred())
+					_, err = db.Exec("FLUSH PRIVILEGES")
+					Expect(err).NotTo(HaveOccurred())
+				}
 			})
 
 			AfterEach(func() {
@@ -159,57 +204,85 @@ var _ = Describe("Enforcer Integration", func() {
 				Expect(err).NotTo(HaveOccurred())
 				defer db.Close()
 
-				_, err = db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", userConfig.DBName, dataTableName))
-				Expect(err).NotTo(HaveOccurred())
+				for _, dbName := range dbNames {
+					_, err = db.Exec(fmt.Sprintf(
+						"DROP DATABASE IF EXISTS %s", dbName))
+					Expect(err).NotTo(HaveOccurred())
+				}
 
-				_, err = db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", userConfig.DBName, tempTableName))
-				Expect(err).NotTo(HaveOccurred())
+				for _, userConfig := range userConfigs {
+					_, err = db.Exec(fmt.Sprintf(
+						"DROP TABLE IF EXISTS %s.%s", userConfig.DBName, dataTableName))
+					Expect(err).NotTo(HaveOccurred())
 
-				_, err = db.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %s", userConfig.DBName))
-				Expect(err).NotTo(HaveOccurred())
+					_, err = db.Exec(fmt.Sprintf(
+						"DROP TABLE IF EXISTS %s.%s", userConfig.DBName, tempTableName))
+					Expect(err).NotTo(HaveOccurred())
 
-				_, err = db.Exec(fmt.Sprintf(`REVOKE ALL PRIVILEGES, GRANT OPTION FROM %s`, userConfig.User))
-				Expect(err).NotTo(HaveOccurred())
+					_, err = db.Exec(fmt.Sprintf(
+						"REVOKE ALL PRIVILEGES, GRANT OPTION FROM %s", userConfig.User))
+					Expect(err).NotTo(HaveOccurred())
 
-				_, err = db.Exec(fmt.Sprintf("DROP USER %s", userConfig.User))
-				Expect(err).NotTo(HaveOccurred())
+					_, err = db.Exec(fmt.Sprintf(
+						"DROP USER %s", userConfig.User))
+					Expect(err).NotTo(HaveOccurred())
 
-				_, err = db.Exec("FLUSH PRIVILEGES")
-				Expect(err).NotTo(HaveOccurred())
+					_, err = db.Exec(
+						"FLUSH PRIVILEGES")
+					Expect(err).NotTo(HaveOccurred())
+				}
 			})
 
-			It("Enforces the quota", func() {
+			It("Enforces the quota for all users on the same database", func() {
 				By("Revoking write access when over the quota", func() {
-					db, err := database.NewConnection(userConfig)
+					user0Connection, err := database.NewConnection(userConfigs[0])
 					Expect(err).NotTo(HaveOccurred())
-					defer db.Close()
+					defer user0Connection.Close()
 
-					createSizedTable(maxStorageMB/2, dataTableName, db)
-					createSizedTable(maxStorageMB/2, tempTableName, db)
+					createSizedTable(maxStorageMB/2, dataTableName, user0Connection)
+					createSizedTable(maxStorageMB/2, tempTableName, user0Connection)
 
 					runEnforcerOnce()
 
-					_, err = db.Exec(fmt.Sprintf("INSERT INTO %s (data) VALUES (?)", dataTableName), []byte{'1'})
+					_, err = user0Connection.Exec(fmt.Sprintf(
+						"INSERT INTO %s (data) VALUES (?)", dataTableName), []byte{'1'})
+					Expect(err).To(HaveOccurred())
+
+					user1Connection, err := database.NewConnection(userConfigs[1])
+					Expect(err).NotTo(HaveOccurred())
+					defer user1Connection.Close()
+
+					_, err = user1Connection.Exec(fmt.Sprintf(
+						"INSERT INTO %s (data) VALUES (?)", dataTableName), []byte{'1'})
 					Expect(err).To(HaveOccurred())
 				})
 
 				By("Re-enabling write access when back under the quota", func() {
-					db, err := database.NewConnection(userConfig)
+					user0Connection, err := database.NewConnection(userConfigs[0])
 					Expect(err).NotTo(HaveOccurred())
-					defer db.Close()
+					defer user0Connection.Close()
 
-					_, err = db.Exec(fmt.Sprintf("DROP TABLE %s", tempTableName))
+					_, err = user0Connection.Exec(fmt.Sprintf("DROP TABLE %s", tempTableName))
 					Expect(err).NotTo(HaveOccurred())
 
 					runEnforcerOnce()
 
-					_, err = db.Exec(fmt.Sprintf("INSERT INTO %s (data) VALUES (?)", dataTableName), []byte{'1'})
+					_, err = user0Connection.Exec(fmt.Sprintf(
+						"INSERT INTO %s (data) VALUES (?)", dataTableName), []byte{'1'})
+					Expect(err).NotTo(HaveOccurred())
+
+					user1Connection, err := database.NewConnection(userConfigs[1])
+					Expect(err).NotTo(HaveOccurred())
+					defer user1Connection.Close()
+
+					_, err = user1Connection.Exec(fmt.Sprintf(
+						"INSERT INTO %s (data) VALUES (?)", dataTableName), []byte{'1'})
 					Expect(err).NotTo(HaveOccurred())
 				})
 			})
 
 			It("restores write access after dropping all tables", func() {
-				db, err := database.NewConnection(userConfig)
+				db, err := database.NewConnection(userConfigs[0])
 				Expect(err).NotTo(HaveOccurred())
 				defer db.Close()
 
@@ -219,18 +292,21 @@ var _ = Describe("Enforcer Integration", func() {
 
 					runEnforcerOnce()
 
-					_, err = db.Exec(fmt.Sprintf("INSERT INTO %s (data) VALUES (?)", dataTableName), []byte{'1'})
+					_, err = db.Exec(fmt.Sprintf(
+						"INSERT INTO %s (data) VALUES (?)", dataTableName), []byte{'1'})
 					Expect(err).To(HaveOccurred())
 				})
 
 				By("Re-enabling write access when back under the quota", func() {
-					_, err := db.Exec(fmt.Sprintf("DROP TABLE %s", dataTableName))
+					_, err := db.Exec(fmt.Sprintf(
+						"DROP TABLE %s", dataTableName))
 					Expect(err).NotTo(HaveOccurred())
 
 					runEnforcerOnce()
 
 					createSizedTable(maxStorageMB/2, dataTableName, db)
-					_, err = db.Exec(fmt.Sprintf("INSERT INTO %s (data) VALUES (?)", dataTableName), []byte{'1'})
+					_, err = db.Exec(fmt.Sprintf(
+						"INSERT INTO %s (data) VALUES (?)", dataTableName), []byte{'1'})
 					Expect(err).NotTo(HaveOccurred())
 				})
 

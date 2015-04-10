@@ -85,7 +85,7 @@ var _ = BeforeSuite(func() {
 	)`)
 	Expect(err).ToNot(HaveOccurred())
 
-	binaryPath, err = gexec.Build("github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer")
+	binaryPath, err = gexec.Build("github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer", "-race")
 	Expect(err).ToNot(HaveOccurred())
 
 	_, err = os.Stat(binaryPath)

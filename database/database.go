@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"database/sql"
+
 	"github.com/pivotal-golang/lager"
 )
 
@@ -41,19 +42,19 @@ func (d database) Name() string {
 }
 
 func (d database) RevokePrivileges() error {
-	d.logger.Info(fmt.Sprintf("Revoking priviledges to db '%s'", d.name))
+	d.logger.Info(fmt.Sprintf("Revoking privileges to db '%s'", d.name))
 
 	result, err := d.db.Exec(revokeQuery, d.name)
 	if err != nil {
-		return fmt.Errorf("Updating db '%s' to revoke priviledges: %s", d.name, err.Error())
+		return fmt.Errorf("Updating db '%s' to revoke privileges: %s", d.name, err.Error())
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return fmt.Errorf("Updating db '%s' to revoke priviledges: Getting rows affected: %s", d.name, err.Error())
+		return fmt.Errorf("Updating db '%s' to revoke privileges: Getting rows affected: %s", d.name, err.Error())
 	}
 
-	d.logger.Info(fmt.Sprintf("Updating db '%s' to revoke priviledges: Rows affected: %d", d.name, rowsAffected))
+	d.logger.Info(fmt.Sprintf("Updating db '%s' to revoke privileges: Rows affected: %d", d.name, rowsAffected))
 
 	_, err = d.db.Exec("FLUSH PRIVILEGES")
 	if err != nil {
@@ -64,19 +65,19 @@ func (d database) RevokePrivileges() error {
 }
 
 func (d database) GrantPrivileges() error {
-	d.logger.Info(fmt.Sprintf("Granting priviledges to db '%s'", d.name))
+	d.logger.Info(fmt.Sprintf("Granting privileges to db '%s'", d.name))
 
 	result, err := d.db.Exec(grantQuery, d.name)
 	if err != nil {
-		return fmt.Errorf("Updating db '%s' to grant priviledges: %s", d.name, err.Error())
+		return fmt.Errorf("Updating db '%s' to grant privileges: %s", d.name, err.Error())
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return fmt.Errorf("Updating db '%s' to grant priviledges: Getting rows affected: %s", d.name, err.Error())
+		return fmt.Errorf("Updating db '%s' to grant privileges: Getting rows affected: %s", d.name, err.Error())
 	}
 
-	d.logger.Info(fmt.Sprintf("Updating db '%s' to grant priviledges: Rows affected: %d", d.name, rowsAffected))
+	d.logger.Info(fmt.Sprintf("Updating db '%s' to grant privileges: Rows affected: %d", d.name, rowsAffected))
 
 	_, err = d.db.Exec("FLUSH PRIVILEGES")
 	if err != nil {
