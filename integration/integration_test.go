@@ -19,20 +19,20 @@ import (
 
 var _ = Describe("Enforcer Integration", func() {
 
-    var exec = func(db *sql.DB, query string, args ...interface{}) (sql.Result, error) {
-        GinkgoWriter.Write([]byte(fmt.Sprintf("EXEC SQL: %s\n", query)))
-        return db.Exec(query, args...)
-    }
+	var exec = func(db *sql.DB, query string, args ...interface{}) (sql.Result, error) {
+		GinkgoWriter.Write([]byte(fmt.Sprintf("EXEC SQL: %s\n", query)))
+		return db.Exec(query, args...)
+	}
 
-    var tableSizeMB = func(dbName, tableName string, db *sql.DB) float64 {
-        var sizeMB float64
-        row := db.QueryRow(`SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 1)
+	var tableSizeMB = func(dbName, tableName string, db *sql.DB) float64 {
+		var sizeMB float64
+		row := db.QueryRow(`SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 1)
             FROM information_schema.TABLES
             WHERE table_schema = ? AND table_name = ?`, dbName, tableName)
-        err := row.Scan(&sizeMB)
-        Expect(err).ToNot(HaveOccurred())
-        return sizeMB
-    }
+		err := row.Scan(&sizeMB)
+		Expect(err).ToNot(HaveOccurred())
+		return sizeMB
+	}
 
 	var createSizedTable = func(numRows int, dbName, tableName string, db *sql.DB) {
 		_, err := exec(db, fmt.Sprintf(
@@ -49,14 +49,14 @@ var _ = Describe("Enforcer Integration", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}
 
-        // Optimizing forces the size metadata to update (normally happens every few seconds)
-        _, err = exec(db, fmt.Sprintf("OPTIMIZE TABLE %s", tableName))
-        Expect(err).ToNot(HaveOccurred())
+		// Optimizing forces the size metadata to update (normally happens every few seconds)
+		_, err = exec(db, fmt.Sprintf("OPTIMIZE TABLE %s", tableName))
+		Expect(err).ToNot(HaveOccurred())
 
-        // Check that the table size matches our expectations
-        // If this doesn't work, then the quota enforcer isn't going to work either...
-        Expect(tableSizeMB(dbName, tableName, db)).To(BeNumerically(">=", numRows))
-    }
+		// Check that the table size matches our expectations
+		// If this doesn't work, then the quota enforcer isn't going to work either...
+		Expect(tableSizeMB(dbName, tableName, db)).To(BeNumerically(">=", numRows))
+	}
 
 	var userConfigs []config.Config
 	var dbNames []string
@@ -210,7 +210,7 @@ var _ = Describe("Enforcer Integration", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					_, err = exec(db,
-                        "INSERT INTO service_instances (guid,plan_guid,max_storage_mb,db_name) VALUES(?,?,?,?)", dbName, plan, maxStorageMB, dbName)
+						"INSERT INTO service_instances (guid,plan_guid,max_storage_mb,db_name) VALUES(?,?,?,?)", dbName, plan, maxStorageMB, dbName)
 					Expect(err).NotTo(HaveOccurred())
 				}
 

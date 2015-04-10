@@ -82,13 +82,12 @@ func main() {
 
 		// Write pid file once we are running continuously
 		if *pidFile != "" {
-			err = writePidFile(*pidFile)
+			pid := os.Getpid()
+			err = writePidFile(pid, *pidFile)
 			if err != nil {
-				logger.Fatal("Cannot write pid to file", err, lager.Data{"pidFile": pidFile})
+				logger.Fatal("Cannot write pid to file", err, lager.Data{"pidFile": pidFile, "pid": pid})
 			}
-			logger.Info("Wrote pidFile to %d", lager.Data{
-				"pidFile": pidFile,
-			})
+			logger.Info("Wrote pid to file", lager.Data{"pidFile": pidFile, "pid": pid})
 		}
 
 		err := <-process.Wait()
@@ -98,14 +97,6 @@ func main() {
 	}
 }
 
-func enforce(e enforcer.Enforcer, logger lager.Logger) {
-	logger.Info("Enforcing")
-	err := e.EnforceOnce()
-	if err != nil {
-		logger.Info(fmt.Sprintf("Enforcing Failed: %s", err.Error()))
-	}
-}
-
-func writePidFile(pidFile string) error {
-	return ioutil.WriteFile(pidFile, []byte(strconv.Itoa(os.Getpid())), 0644)
+func writePidFile(pid int, pidFile string) error {
+	return ioutil.WriteFile(pidFile, []byte(strconv.Itoa(pid)), 0644)
 }
