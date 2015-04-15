@@ -3,10 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 
-	"github.com/fraenkel/candiedyaml"
 	"gopkg.in/validator.v2"
 )
 
@@ -16,33 +13,6 @@ type Config struct {
 	User     string `validate:"nonzero"`
 	Password string //blank Password is allowed
 	DBName   string //blank DBName is allowed
-}
-
-func Load(filePath string) (*Config, error) {
-	filePath, err := filepath.Abs(filePath)
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Making config file path absolute: %s", err.Error()))
-	}
-
-	file, err := os.Open(filePath)
-	if err != nil {
-		return nil, err
-	}
-
-	config := new(Config)
-
-	decoder := candiedyaml.NewDecoder(file)
-	err = decoder.Decode(config)
-	if err != nil {
-		return nil, err
-	}
-
-	err = config.Validate()
-	if err != nil {
-		return nil, err
-	}
-
-	return config, nil
 }
 
 func (c Config) Validate() error {

@@ -14,6 +14,7 @@ import (
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/config"
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database"
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/enforcer"
+	"github.com/pivotal-cf-experimental/service-config"
 	"github.com/pivotal-golang/lager"
 )
 
@@ -26,18 +27,25 @@ type Config struct {
 }
 
 func main() {
+	serviceConfig := service_config.New()
+
 	flags := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 	runOnce := flags.Bool("runOnce", false, "Run only once instead of continuously")
-	configFile := flags.String("configFile", "config.yml", "Location of config file")
 	pidFile := flags.String("pidFile", "", "Location of pid file")
+	serviceConfig.AddFlags(flags)
 	cf_lager.AddFlags(flags)
 	flags.Parse(os.Args[1:])
 	logger, _ := cf_lager.New("Quota Enforcer")
 
-	logger.Info("Config file", lager.Data{"configFile": configFile})
-	config, err := config.Load(*configFile)
+	var config config.Config
+	err := serviceConfig.Read(&config)
 	if err != nil {
-		logger.Fatal("Failed to load config file", err)
+		logger.Fatal("Failed to read config", err)
+	}
+
+	err = config.Validate()
+	if err != nil {
+		logger.Fatal("Invalid config", err)
 	}
 
 	brokerDBName := config.DBName
@@ -45,7 +53,7 @@ func main() {
 		logger.Fatal("Must specify DBName in the config file", nil)
 	}
 
-	db, err := database.NewConnection(*config)
+	db, err := database.NewConnection(config)
 	if db != nil {
 		defer db.Close()
 	}

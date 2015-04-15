@@ -14,4 +14,4 @@ before_script:
 
 script:
 - ./bin/test-unit
-- DB_PASSWORD="" ./bin/test-integration
+- CONFIG_PATH="$PWD/config-travis.json" ./bin/test-integration

@@ -1,12 +1,16 @@
 package enforcer_test
 
 import (
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
+	"os"
+	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
+	"testing"
+	"time"
 
-	"github.com/fraenkel/candiedyaml"
 	"github.com/nu7hatch/gouuid"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -16,22 +20,15 @@ import (
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/config"
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database"
 
-	"fmt"
-	"testing"
-	"time"
-
 	_ "github.com/go-sql-driver/mysql"
-
-	"os"
-	"os/exec"
-)
+    "github.com/pivotal-cf-experimental/service-config")
 
 var brokerDBName string
 var rootConfig config.Config
 var binaryPath string
 
 var tempDir string
-var configFile string
+var configPath string
 
 func TestEnforcer(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -39,17 +36,14 @@ func TestEnforcer(t *testing.T) {
 }
 
 func newRootDatabaseConfig(dbName string) config.Config {
+    serviceConfig := service_config.New()
 
-	dbPort, err := strconv.Atoi(os.Getenv("DB_PORT"))
-	Expect(err).ToNot(HaveOccurred())
+    var dbConfig config.Config
+    err := serviceConfig.Read(&dbConfig)
+    Expect(err).ToNot(HaveOccurred())
 
-	dbConfig := config.Config{
-		Host:     os.Getenv("DB_HOST"),
-		Port:     dbPort,
-		User:     os.Getenv("DB_USER"),
-		Password: os.Getenv("DB_PASSWORD"),
-		DBName:   dbName,
-	}
+    dbConfig.DBName = dbName
+
 	err = dbConfig.Validate()
 	Expect(err).ToNot(HaveOccurred())
 
@@ -94,7 +88,7 @@ var _ = BeforeSuite(func() {
 	tempDir, err = ioutil.TempDir(os.TempDir(), "quota-enforcer-integration-test")
 	Expect(err).NotTo(HaveOccurred())
 
-	configFile = filepath.Join(tempDir, "quotaEnforcerConfig.yml")
+	configPath = filepath.Join(tempDir, "quotaEnforcerConfig.yml")
 	writeConfig()
 })
 
@@ -128,7 +122,7 @@ func startEnforcerWithFlags(flags ...string) *gexec.Session {
 
 	flags = append(
 		flags,
-		fmt.Sprintf("-configFile=%s", configFile),
+		fmt.Sprintf("-configPath=%s", configPath),
 		"-logLevel=debug",
 	)
 
@@ -138,7 +132,7 @@ func startEnforcerWithFlags(flags ...string) *gexec.Session {
 	)
 
 	session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
-	Expect(err).ShouldNot(HaveOccurred())
+	Expect(err).ToNot(HaveOccurred())
 
 	return session
 }
@@ -160,12 +154,14 @@ func runEnforcerOnce() {
 }
 
 func writeConfig() {
-	fileToWrite, err := os.Create(configFile)
-	Expect(err).ShouldNot(HaveOccurred())
+	fileToWrite, err := os.Create(configPath)
+	Expect(err).ToNot(HaveOccurred())
 
-	encoder := candiedyaml.NewEncoder(fileToWrite)
-	err = encoder.Encode(rootConfig)
-	Expect(err).ShouldNot(HaveOccurred())
+	bytes, err := json.MarshalIndent(rootConfig, "", "  ")
+	Expect(err).ToNot(HaveOccurred())
+
+	_, err = fileToWrite.Write(bytes)
+	Expect(err).ToNot(HaveOccurred())
 }
 
 func uuidWithUnderscores(prefix string) string {

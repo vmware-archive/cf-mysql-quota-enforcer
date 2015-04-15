@@ -5,10 +5,16 @@ Quota enforcer for cf-mysql-release
 
 ### Configuration
 
-The quota enforcer executable requires a config file. The default location for this file is assumed to be `./config.yml`, and can be overridden using `-configFile=/path/to/config.yml` flag.
+The quota enforcer executable requires either a config file or a config string, encoded in json.
+[service-config](https://github.com/pivotal-cf-experimental/service-config) is used to load the config.
 
- An example configuration file is provided in `config-example.yml`. Copy this to
-`config.yml` and edit as necessary; `config.yml` is ignored by git.
+Examples:
+- `$ cf-mysql-quota-enforcer -configPath=/path/to/config.json`
+- `$ cf-mysql-quota-enforcer -config={"Host": "127.0.0.1", "Port": 3306, "User": "root", "Password": "password", "DBName": "development"}`
+
+
+An example configuration file is provided in `config-example.json`.
+Copy this to `config.json` and edit as necessary; `config.json` is ignored by git.
 
 ##Testing
 
