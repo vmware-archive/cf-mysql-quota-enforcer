@@ -2,5 +2,5 @@
 tmp/
 **/*.test
 
-config.yml
+config.yaml
 config.json

@@ -14,4 +14,4 @@ before_script:
 
 script:
 - ./bin/test-unit
-- CONFIG_PATH="$PWD/config-travis.json" ./bin/test-integration
+- CONFIG_PATH="$PWD/config-travis.yaml" ./bin/test-integration

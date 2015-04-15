@@ -21,7 +21,8 @@ import (
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database"
 
 	_ "github.com/go-sql-driver/mysql"
-    "github.com/pivotal-cf-experimental/service-config")
+	"github.com/pivotal-cf-experimental/service-config"
+)
 
 var brokerDBName string
 var rootConfig config.Config
@@ -36,13 +37,13 @@ func TestEnforcer(t *testing.T) {
 }
 
 func newRootDatabaseConfig(dbName string) config.Config {
-    serviceConfig := service_config.New()
+	serviceConfig := service_config.New()
 
-    var dbConfig config.Config
-    err := serviceConfig.Read(&dbConfig)
-    Expect(err).ToNot(HaveOccurred())
+	var dbConfig config.Config
+	err := serviceConfig.Read(&dbConfig)
+	Expect(err).ToNot(HaveOccurred())
 
-    dbConfig.DBName = dbName
+	dbConfig.DBName = dbName
 
 	err = dbConfig.Validate()
 	Expect(err).ToNot(HaveOccurred())
