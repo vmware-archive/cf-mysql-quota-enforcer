@@ -44,12 +44,11 @@ var _ = Describe("Database", func() {
 
 	Describe("RevokePrivileges", func() {
 		var (
-			revokePrivilegesPattern = `REVOKE INSERT, UPDATE, CREATE ON \?.\* FROM '\?'@'\%'`
+			revokePrivilegesPattern = `REVOKE INSERT, UPDATE, CREATE ON fake-db-name.\* FROM 'fake-db-user'@'\%'`
 		)
 
 		It("makes a sql query to revoke privileges on a database and then flushes privileges", func() {
 			sqlmock.ExpectExec(revokePrivilegesPattern).
-				WithArgs(dbName, dbUser).
 				WillReturnResult(sqlmock.NewResult(-1, 1))
 
 			sqlmock.ExpectExec(flushPrivilegesPattern).
@@ -63,7 +62,6 @@ var _ = Describe("Database", func() {
 		Context("when the query fails", func() {
 			BeforeEach(func() {
 				sqlmock.ExpectExec(revokePrivilegesPattern).
-					WithArgs(dbName, dbUser).
 					WillReturnError(errors.New("fake-query-error"))
 			})
 
@@ -79,7 +77,6 @@ var _ = Describe("Database", func() {
 		Context("when getting the number of affected rows fails", func() {
 			BeforeEach(func() {
 				sqlmock.ExpectExec(revokePrivilegesPattern).
-					WithArgs(dbName, dbUser).
 					WillReturnResult(sqlmock.NewErrorResult(errors.New("fake-rows-affected-error")))
 			})
 
@@ -96,7 +93,6 @@ var _ = Describe("Database", func() {
 		Context("when flushing privileges fails", func() {
 			BeforeEach(func() {
 				sqlmock.ExpectExec(revokePrivilegesPattern).
-					WithArgs(dbName, dbUser).
 					WillReturnResult(sqlmock.NewResult(-1, 1))
 
 				sqlmock.ExpectExec(flushPrivilegesPattern).
@@ -114,16 +110,14 @@ var _ = Describe("Database", func() {
 
 	Describe("GrantPrivileges", func() {
 		var (
-			grantPrivilegesPattern = `GRANT INSERT, UPDATE, CREATE ON \?.\* TO '\?'@'\%'`
+			grantPrivilegesPattern = `GRANT INSERT, UPDATE, CREATE ON fake-db-name.\* TO 'fake-db-user'@'\%'`
 		)
 
 		It("grants privileges to the database", func() {
 			sqlmock.ExpectExec(grantPrivilegesPattern).
-				WithArgs(dbName, dbUser).
 				WillReturnResult(sqlmock.NewResult(-1, 1))
 
 			sqlmock.ExpectExec(flushPrivilegesPattern).
-				WithArgs().
 				WillReturnResult(sqlmock.NewResult(-1, 1))
 
 			err := database.GrantPrivileges()
@@ -133,7 +127,6 @@ var _ = Describe("Database", func() {
 		Context("when the query fails", func() {
 			BeforeEach(func() {
 				sqlmock.ExpectExec(grantPrivilegesPattern).
-					WithArgs(dbName, dbUser).
 					WillReturnError(errors.New("fake-query-error"))
 			})
 
@@ -149,7 +142,6 @@ var _ = Describe("Database", func() {
 		Context("when getting the number of affected rows fails", func() {
 			BeforeEach(func() {
 				sqlmock.ExpectExec(grantPrivilegesPattern).
-					WithArgs(dbName, dbUser).
 					WillReturnResult(sqlmock.NewErrorResult(errors.New("fake-rows-affected-error")))
 			})
 
@@ -166,7 +158,6 @@ var _ = Describe("Database", func() {
 		Context("when flushing privileges fails", func() {
 			BeforeEach(func() {
 				sqlmock.ExpectExec(grantPrivilegesPattern).
-					WithArgs(dbName, dbUser).
 					WillReturnResult(sqlmock.NewResult(-1, 1))
 
 				sqlmock.ExpectExec(flushPrivilegesPattern).
