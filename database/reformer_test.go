@@ -16,7 +16,11 @@ import (
 
 var _ = Describe("ReformerRepo", func() {
 
-	const brokerDBName = "fake_broker_db_name"
+	const (
+		brokerDBName = "fake_broker_db_name"
+		adminUser    = "root"
+	)
+
 	var (
 		logger *lagertest.TestLogger
 		repo   Repo
@@ -29,7 +33,7 @@ var _ = Describe("ReformerRepo", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		logger = lagertest.NewTestLogger("ReformerRepo test")
-		repo = NewReformerRepo(brokerDBName, fakeDB, logger)
+		repo = NewReformerRepo(brokerDBName, adminUser, fakeDB, logger)
 	})
 
 	AfterEach(func() {
@@ -39,21 +43,24 @@ var _ = Describe("ReformerRepo", func() {
 
 	Describe("All", func() {
 		var (
-			tableSchemaColumns = []string{"db"}
+			tableSchemaColumns = []string{"db", "user"}
 			matchAny           = ".*"
 		)
 
 		It("returns a list of databases that have come under their quota", func() {
 			sqlmock.ExpectQuery(matchAny).
 				WithArgs().
-				WillReturnRows(sqlmock.NewRows(tableSchemaColumns).AddRow("fake-database-1").AddRow("fake-database-2"))
+				WillReturnRows(
+				sqlmock.NewRows(tableSchemaColumns).
+					AddRow("fake-database-1", "cf_fake-user-1").
+					AddRow("fake-database-2", "cf_fake-user-2"))
 
 			reformers, err := repo.All()
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(reformers).To(ConsistOf(
-				New("fake-database-1", fakeDB, logger),
-				New("fake-database-2", fakeDB, logger),
+				New("fake-database-1", "cf_fake-user-1", fakeDB, logger),
+				New("fake-database-2", "cf_fake-user-2", fakeDB, logger),
 			))
 		})
 

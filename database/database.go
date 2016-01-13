@@ -29,7 +29,7 @@ type database struct {
 	logger lager.Logger
 }
 
-func New(name string, db *sql.DB, logger lager.Logger) Database {
+func New(name, user string, db *sql.DB, logger lager.Logger) Database {
 	return &database{
 		name:   name,
 		db:     db,

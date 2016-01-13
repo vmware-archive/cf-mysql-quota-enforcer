@@ -30,7 +30,7 @@ var _ = Describe("Database", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		logger = lagertest.NewTestLogger("Database test")
-		database = New(dbName, fakeDB, logger)
+		database = New(dbName, "", fakeDB, logger)
 	})
 
 	AfterEach(func() {

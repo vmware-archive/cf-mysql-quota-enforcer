@@ -44,13 +44,13 @@ func (r repo) All() ([]Database, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var dbName string
-		if err := rows.Scan(&dbName); err != nil {
+		var dbName, user string
+		if err := rows.Scan(&dbName, &user); err != nil {
 			//TODO: untested error case, due to limitation of sqlmock: https://github.com/DATA-DOG/go-sqlmock/issues/13
 			return databases, fmt.Errorf("Scanning result row of '%s'.All: %s", r.logTag, err.Error())
 		}
 
-		databases = append(databases, New(dbName, r.db, r.logger))
+		databases = append(databases, New(dbName, "", r.db, r.logger))
 	}
 	//TODO: untested error case, due to limitation of sqlmock: https://github.com/DATA-DOG/go-sqlmock/issues/13
 	if err := rows.Err(); err != nil {

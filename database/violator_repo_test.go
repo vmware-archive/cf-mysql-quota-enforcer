@@ -16,7 +16,11 @@ import (
 
 var _ = Describe("ViolatorRepo", func() {
 
-	const brokerDBName = "fake_broker_db_name"
+	const (
+		brokerDBName = "fake_broker_db_name"
+		adminUser    = "fake_admin_user"
+	)
+
 	var (
 		logger *lagertest.TestLogger
 		repo   Repo
@@ -29,7 +33,7 @@ var _ = Describe("ViolatorRepo", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		logger = lagertest.NewTestLogger("ViolatorRepo test")
-		repo = NewViolatorRepo(brokerDBName, fakeDB, logger)
+		repo = NewViolatorRepo(brokerDBName, adminUser, fakeDB, logger)
 	})
 
 	AfterEach(func() {
@@ -39,21 +43,23 @@ var _ = Describe("ViolatorRepo", func() {
 
 	Describe("All", func() {
 		var (
-			tableSchemaColumns = []string{"db"}
+			tableSchemaColumns = []string{"db", "user"}
 			matchAny           = ".*"
 		)
 
 		It("returns a list of databases that have exceeded their quota", func() {
 			sqlmock.ExpectQuery(matchAny).
 				WithArgs().
-				WillReturnRows(sqlmock.NewRows(tableSchemaColumns).AddRow("fake-database-1").AddRow("fake-database-2"))
+				WillReturnRows(sqlmock.NewRows(tableSchemaColumns).
+				AddRow("fake-database-1", "cf_fake-user-1").
+				AddRow("fake-database-2", "cf_fake-user-2"))
 
 			violators, err := repo.All()
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(violators).To(ConsistOf(
-				New("fake-database-1", fakeDB, logger),
-				New("fake-database-2", fakeDB, logger),
+				New("fake-database-1", "cf_fake-user-1", fakeDB, logger),
+				New("fake-database-2", "cf_fake-user-2", fakeDB, logger),
 			))
 		})
 

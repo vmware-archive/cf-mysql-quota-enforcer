@@ -53,6 +53,8 @@ func main() {
 		logger.Fatal("Must specify DBName in the config file", nil)
 	}
 
+	adminUser := config.User
+
 	db, err := database.NewConnection(config)
 	if db != nil {
 		defer db.Close()
@@ -67,12 +69,12 @@ func main() {
 		lager.Data{
 			"Host":         config.Host,
 			"Port":         config.Port,
-			"User":         config.User,
+			"User":         adminUser,
 			"DatabaseName": brokerDBName,
 		})
 
-	violatorRepo := database.NewViolatorRepo(brokerDBName, db, logger)
-	reformerRepo := database.NewReformerRepo(brokerDBName, db, logger)
+	violatorRepo := database.NewViolatorRepo(brokerDBName, adminUser, db, logger)
+	reformerRepo := database.NewReformerRepo(brokerDBName, adminUser, db, logger)
 
 	e := enforcer.NewEnforcer(violatorRepo, reformerRepo, logger)
 	r := enforcer.NewRunner(e, logger)
