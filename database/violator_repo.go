@@ -17,7 +17,7 @@ FROM (
 	) AS dbs
 	JOIN %s.service_instances AS instances ON dbs.name = instances.db_name COLLATE utf8_general_ci
 	JOIN information_schema.tables AS tables ON tables.table_schema = dbs.name
-	GROUP BY dbs.name
+	GROUP BY dbs.user
 	HAVING ROUND(SUM(COALESCE(tables.data_length + tables.index_length,0) / 1024 / 1024), 1) >= MAX(instances.max_storage_mb)
 ) AS violators
 `

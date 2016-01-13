@@ -18,7 +18,7 @@ FROM (
 	) AS violator_dbs
 	JOIN        %s.service_instances AS instances ON violator_dbs.name = instances.db_name COLLATE utf8_general_ci
 	LEFT JOIN   information_schema.tables AS tables ON tables.table_schema = violator_dbs.name
-	GROUP  BY   violator_dbs.name
+	GROUP  BY   violator_dbs.user
 	HAVING ROUND(SUM(COALESCE(tables.data_length + tables.index_length,0) / 1024 / 1024), 1) < MAX(instances.max_storage_mb)
 ) AS reformers
 `
