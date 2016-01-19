@@ -18,7 +18,8 @@ var _ = Describe("ReformerRepo", func() {
 
 	const (
 		brokerDBName = "fake_broker_db_name"
-		adminUser    = "root"
+		adminUser    = "fake_admin_user"
+		readOnlyUser = "fake_read_only_user"
 	)
 
 	var (
@@ -33,7 +34,7 @@ var _ = Describe("ReformerRepo", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		logger = lagertest.NewTestLogger("ReformerRepo test")
-		repo = NewReformerRepo(brokerDBName, adminUser, fakeDB, logger)
+		repo = NewReformerRepo(brokerDBName, adminUser, readOnlyUser, fakeDB, logger)
 	})
 
 	AfterEach(func() {

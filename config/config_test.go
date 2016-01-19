@@ -13,11 +13,12 @@ var _ = Describe("Config", func() {
 
 		BeforeEach(func() {
 			config = Config{
-				Host:     "fake-host",
-				Port:     9999,
-				User:     "fake-user",
-				Password: "fake-password",
-				DBName:   "fake-db-name",
+				Host:         "fake-host",
+				Port:         9999,
+				User:         "fake-user",
+				Password:     "fake-password",
+				ReadOnlyUser: "fake-read-only-user",
+				DBName:       "fake-db-name",
 			}
 		})
 
@@ -59,6 +60,18 @@ var _ = Describe("Config", func() {
 				err := config.Validate()
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("User"))
+			})
+		})
+
+		Context("when ReadOnlyUser is not specified", func() {
+			BeforeEach(func() {
+				config.ReadOnlyUser = ""
+			})
+
+			It("returns a validation error", func() {
+				err := config.Validate()
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("ReadOnlyUser"))
 			})
 		})
 

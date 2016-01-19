@@ -14,7 +14,9 @@ FROM (
 	SELECT violator_dbs.name, violator_dbs.user, tables.data_length, tables.index_length
 	FROM   (
 		SELECT DISTINCT Db AS name, User AS user from mysql.db
-		WHERE  (Insert_priv = 'N' OR Update_priv = 'N' OR Create_priv = 'N') AND User <> '%s'
+		WHERE  (Insert_priv = 'N' OR Update_priv = 'N' OR Create_priv = 'N')
+		AND User <> '%s'
+		AND User <> '%s'
 	) AS violator_dbs
 	JOIN        %s.service_instances AS instances ON violator_dbs.name = instances.db_name COLLATE utf8_general_ci
 	LEFT JOIN   information_schema.tables AS tables ON tables.table_schema = violator_dbs.name
@@ -23,7 +25,7 @@ FROM (
 ) AS reformers
 `
 
-func NewReformerRepo(brokerDBName, adminUser string, db *sql.DB, logger lager.Logger) Repo {
-	query := fmt.Sprintf(reformersQueryPattern, adminUser, brokerDBName)
+func NewReformerRepo(brokerDBName, adminUser, readOnlyUser string, db *sql.DB, logger lager.Logger) Repo {
+	query := fmt.Sprintf(reformersQueryPattern, adminUser, readOnlyUser, brokerDBName)
 	return newRepo(query, db, logger, "quota reformer")
 }

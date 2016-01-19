@@ -54,6 +54,7 @@ func main() {
 	}
 
 	adminUser := config.User
+	readOnlyUser := config.ReadOnlyUser
 
 	db, err := database.NewConnection(config)
 	if db != nil {
@@ -73,8 +74,8 @@ func main() {
 			"DatabaseName": brokerDBName,
 		})
 
-	violatorRepo := database.NewViolatorRepo(brokerDBName, adminUser, db, logger)
-	reformerRepo := database.NewReformerRepo(brokerDBName, adminUser, db, logger)
+	violatorRepo := database.NewViolatorRepo(brokerDBName, adminUser, readOnlyUser, db, logger)
+	reformerRepo := database.NewReformerRepo(brokerDBName, adminUser, readOnlyUser, db, logger)
 
 	e := enforcer.NewEnforcer(violatorRepo, reformerRepo, logger)
 	r := enforcer.NewRunner(e, logger)
