@@ -8,11 +8,12 @@ import (
 )
 
 type Config struct {
-	Host     string `validate:"nonzero"`
-	Port     int    `validate:"nonzero"`
-	User     string `validate:"nonzero"`
-	Password string //blank Password is allowed
-	DBName   string //blank DBName is allowed
+	Host         string `validate:"nonzero"`
+	Port         int    `validate:"nonzero"`
+	User         string `validate:"nonzero"`
+	Password     string //blank Password is allowed
+	ReadOnlyUser string `validate:"nonzero"`
+	DBName       string //blank DBName is allowed
 }
 
 func (c Config) Validate() error {

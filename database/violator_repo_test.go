@@ -19,6 +19,7 @@ var _ = Describe("ViolatorRepo", func() {
 	const (
 		brokerDBName = "fake_broker_db_name"
 		adminUser    = "fake_admin_user"
+		readOnlyUser = "fake_read_only_user"
 	)
 
 	var (
@@ -33,7 +34,7 @@ var _ = Describe("ViolatorRepo", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		logger = lagertest.NewTestLogger("ViolatorRepo test")
-		repo = NewViolatorRepo(brokerDBName, adminUser, fakeDB, logger)
+		repo = NewViolatorRepo(brokerDBName, adminUser, readOnlyUser, fakeDB, logger)
 	})
 
 	AfterEach(func() {

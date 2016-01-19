@@ -61,11 +61,15 @@ var _ = Describe("Enforcer Integration", func() {
 	var userConfigs []config.Config
 	var dbNames []string
 
+	var readOnlyUser string
+
 	BeforeEach(func() {
 		// MySQL mandates usernames are <= 16 chars
 		user0 := uuidWithUnderscores("user")[:16]
 		user1 := uuidWithUnderscores("user")[:16]
 		user2 := uuidWithUnderscores("user")[:16]
+
+		readOnlyUser = rootConfig.ReadOnlyUser
 
 		dbNames = []string{
 			uuidWithUnderscores("cf"),
@@ -73,31 +77,34 @@ var _ = Describe("Enforcer Integration", func() {
 		}
 
 		user0Config := config.Config{
-			Host:     rootConfig.Host,
-			Port:     rootConfig.Port,
-			User:     user0,
-			Password: uuidWithUnderscores("password"),
-			DBName:   dbNames[0],
+			Host:         rootConfig.Host,
+			Port:         rootConfig.Port,
+			User:         user0,
+			Password:     uuidWithUnderscores("password"),
+			ReadOnlyUser: readOnlyUser,
+			DBName:       dbNames[0],
 		}
 		err := user0Config.Validate()
 		Expect(err).ToNot(HaveOccurred())
 
 		user1Config := config.Config{
-			Host:     rootConfig.Host,
-			Port:     rootConfig.Port,
-			User:     user1,
-			Password: uuidWithUnderscores("password"),
-			DBName:   dbNames[0],
+			Host:         rootConfig.Host,
+			Port:         rootConfig.Port,
+			User:         user1,
+			Password:     uuidWithUnderscores("password"),
+			ReadOnlyUser: readOnlyUser,
+			DBName:       dbNames[0],
 		}
 		err = user1Config.Validate()
 		Expect(err).ToNot(HaveOccurred())
 
 		user2Config := config.Config{
-			Host:     rootConfig.Host,
-			Port:     rootConfig.Port,
-			User:     user2,
-			Password: uuidWithUnderscores("password"),
-			DBName:   dbNames[1],
+			Host:         rootConfig.Host,
+			Port:         rootConfig.Port,
+			User:         user2,
+			Password:     uuidWithUnderscores("password"),
+			ReadOnlyUser: readOnlyUser,
+			DBName:       dbNames[1],
 		}
 		err = user2Config.Validate()
 		Expect(err).ToNot(HaveOccurred())
@@ -349,6 +356,83 @@ var _ = Describe("Enforcer Integration", func() {
 					Expect(err).NotTo(HaveOccurred())
 				})
 
+			})
+
+			Context("read only user", func() {
+				var (
+					readOnlyPassword       = "password"
+					readOnlyUserConnection *sql.DB
+					err                    error
+					tableName              = "fake_table"
+				)
+
+				BeforeEach(func() {
+					readOnlyUserConnection, err = sql.Open("mysql", fmt.Sprintf(
+						"%s:%s@tcp(%s:%d)/%s",
+						readOnlyUser,
+						readOnlyPassword,
+						rootConfig.Host,
+						rootConfig.Port,
+						rootConfig.DBName,
+					))
+					Expect(err).ToNot(HaveOccurred())
+
+					db, err := database.NewConnection(rootConfig)
+					Expect(err).NotTo(HaveOccurred())
+					defer db.Close()
+
+					_, err = exec(db, fmt.Sprintf(
+						"GRANT SELECT ON *.* TO '%s' IDENTIFIED BY '%s'",
+						readOnlyUser,
+						readOnlyPassword,
+					))
+					Expect(err).NotTo(HaveOccurred())
+
+					_, err = exec(db, "FLUSH PRIVILEGES")
+					Expect(err).NotTo(HaveOccurred())
+
+					_, err = exec(db, fmt.Sprintf(
+						"CREATE TABLE %s (data INT) ENGINE = INNODB",
+						tableName,
+					))
+					Expect(err).NotTo(HaveOccurred())
+
+				})
+
+				AfterEach(func() {
+					db, err := database.NewConnection(rootConfig)
+					Expect(err).NotTo(HaveOccurred())
+					defer db.Close()
+
+					defer readOnlyUserConnection.Close()
+
+					_, err = exec(db, fmt.Sprintf(
+						"DROP USER %s", readOnlyUser))
+					Expect(err).NotTo(HaveOccurred())
+
+					_, err = exec(db, "FLUSH PRIVILEGES")
+					Expect(err).NotTo(HaveOccurred())
+
+					_, err = exec(db, fmt.Sprintf(
+						"DROP TABLE %s",
+						tableName,
+					))
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("does not modify the read only user's privileges", func() {
+					runEnforcerOnce()
+
+					data := 12
+					//Expect user to only have select privileges still
+					_, err = exec(readOnlyUserConnection, fmt.Sprintf(
+						"INSERT INTO %s (data) VALUES (?)",
+						tableName),
+						data,
+					)
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("INSERT command denied"))
+				})
 			})
 		})
 	})
