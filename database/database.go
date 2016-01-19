@@ -42,7 +42,6 @@ func (d database) Name() string {
 
 func (d database) RevokePrivileges() error {
 	d.logger.Info(fmt.Sprintf("Revoking privileges to db '%s', user '%s'", d.name, d.user))
-	d.logger.Info(fmt.Sprintf(revokeQuery, d.name, d.user))
 	result, err := d.db.Exec(fmt.Sprintf(revokeQuery, d.name, d.user))
 	if err != nil {
 		return fmt.Errorf("Updating db '%s', user '%s' to revoke privileges: %s", d.name, d.user, err.Error())
@@ -65,7 +64,6 @@ func (d database) RevokePrivileges() error {
 
 func (d database) GrantPrivileges() error {
 	d.logger.Info(fmt.Sprintf("Granting privileges to db '%s', user '%s'", d.name, d.user))
-	d.logger.Info(fmt.Sprintf(grantQuery, d.name, d.user))
 	result, err := d.db.Exec(fmt.Sprintf(grantQuery, d.name, d.user))
 	if err != nil {
 		return fmt.Errorf("Updating db '%s', user '%s' to grant privileges: %s", d.name, d.user, err.Error())
