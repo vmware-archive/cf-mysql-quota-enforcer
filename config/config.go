@@ -8,11 +8,12 @@ import (
 )
 
 type Config struct {
-	Host     string `yaml:"Host" validate:"nonzero"`
-	Port     int    `yaml:"Port" validate:"nonzero"`
-	User     string `yaml:"User" validate:"nonzero"`
-	Password string `yaml:"Password"` //blank Password is allowed
-	DBName   string `yaml:"DBName"`   //blank DBName is allowed
+	Host         string `yaml:"Host" validate:"nonzero"`
+	Port         int    `yaml:"Port" validate:"nonzero"`
+	User         string `yaml:"User" validate:"nonzero"`
+	Password     string `yaml:"Password"` //blank Password is allowed
+	ReadOnlyUser string `yaml:"ReadOnlyUser" validate:"nonzero"`
+	DBName       string `yaml:"DBName"` //blank DBName is allowed
 }
 
 func (c Config) Validate() error {
