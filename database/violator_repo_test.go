@@ -51,8 +51,8 @@ var _ = Describe("ViolatorRepo", func() {
 			sqlmock.ExpectQuery(matchAny).
 				WithArgs().
 				WillReturnRows(sqlmock.NewRows(tableSchemaColumns).
-				AddRow("fake-database-1", "cf_fake-user-1").
-				AddRow("fake-database-2", "cf_fake-user-2"))
+					AddRow("fake-database-1", "cf_fake-user-1").
+					AddRow("fake-database-2", "cf_fake-user-2"))
 
 			violators, err := repo.All()
 			Expect(err).ToNot(HaveOccurred())
