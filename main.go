@@ -48,11 +48,6 @@ func main() {
 		logger.Fatal("Invalid config", err)
 	}
 
-	brokerDBName := config.DBName
-	if brokerDBName == "" {
-		logger.Fatal("Must specify DBName in the config file", nil)
-	}
-
 	adminUser := config.User
 	readOnlyUser := config.ReadOnlyUser
 

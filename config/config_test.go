@@ -80,10 +80,10 @@ var _ = Describe("Config", func() {
 				config.Password = ""
 			})
 
-			It("allow blank Password", func() {
+			It("returns a validation error", func() {
 				err := config.Validate()
-				Expect(err).ToNot(HaveOccurred())
-				Expect(config.Password).To(BeEmpty())
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("Password"))
 			})
 		})
 
@@ -92,10 +92,10 @@ var _ = Describe("Config", func() {
 				config.DBName = ""
 			})
 
-			It("allows blank DBName", func() {
+			It("returns a validation error", func() {
 				err := config.Validate()
-				Expect(err).ToNot(HaveOccurred())
-				Expect(config.DBName).To(BeEmpty())
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("DBName"))
 			})
 		})
 	})
