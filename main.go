@@ -18,14 +18,6 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
-type Config struct {
-	Host         string
-	Port         int
-	User         string
-	Password     string
-	BrokerDBName string
-}
-
 func main() {
 	serviceConfig := service_config.New()
 
@@ -50,6 +42,7 @@ func main() {
 
 	adminUser := config.User
 	readOnlyUser := config.ReadOnlyUser
+	brokerDBName := config.DBName
 
 	db, err := database.NewConnection(config)
 	if db != nil {
