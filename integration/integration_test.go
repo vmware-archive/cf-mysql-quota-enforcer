@@ -71,7 +71,7 @@ var _ = Describe("Enforcer Integration", func() {
 		user1 := uuidWithUnderscores("user")[:16]
 		user2 := uuidWithUnderscores("user")[:16]
 
-		readOnlyUser = rootConfig.ReadOnlyUser
+		readOnlyUser = c.ReadOnlyUser
 
 		dbNames = []string{
 			uuidWithUnderscores("cf"),
@@ -79,8 +79,8 @@ var _ = Describe("Enforcer Integration", func() {
 		}
 
 		user0Config := config.Config{
-			Host:         rootConfig.Host,
-			Port:         rootConfig.Port,
+			Host:         c.Host,
+			Port:         c.Port,
 			User:         user0,
 			Password:     uuidWithUnderscores("password"),
 			ReadOnlyUser: readOnlyUser,
@@ -90,8 +90,8 @@ var _ = Describe("Enforcer Integration", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		user1Config := config.Config{
-			Host:         rootConfig.Host,
-			Port:         rootConfig.Port,
+			Host:         c.Host,
+			Port:         c.Port,
 			User:         user1,
 			Password:     uuidWithUnderscores("password"),
 			ReadOnlyUser: readOnlyUser,
@@ -101,8 +101,8 @@ var _ = Describe("Enforcer Integration", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		user2Config := config.Config{
-			Host:         rootConfig.Host,
-			Port:         rootConfig.Port,
+			Host:         c.Host,
+			Port:         c.Port,
 			User:         user2,
 			Password:     uuidWithUnderscores("password"),
 			ReadOnlyUser: readOnlyUser,
@@ -210,7 +210,7 @@ var _ = Describe("Enforcer Integration", func() {
 			)
 
 			BeforeEach(func() {
-				db, err = database.NewConnection(rootConfig.User, rootConfig.Password, rootConfig.Host, rootConfig.Port, rootConfig.DBName)
+				db, err = database.NewConnection(c.User, c.Password, c.Host, c.Port, c.DBName)
 				Expect(err).NotTo(HaveOccurred())
 
 				for _, dbName := range dbNames {
@@ -371,13 +371,13 @@ var _ = Describe("Enforcer Integration", func() {
 						"%s:%s@tcp(%s:%d)/%s",
 						readOnlyUser,
 						readOnlyPassword,
-						rootConfig.Host,
-						rootConfig.Port,
-						rootConfig.DBName,
+						c.Host,
+						c.Port,
+						c.DBName,
 					))
 					Expect(err).ToNot(HaveOccurred())
 
-					db, err := database.NewConnection(rootConfig.User, rootConfig.Password, rootConfig.Host, rootConfig.Port, rootConfig.DBName)
+					db, err := database.NewConnection(c.User, c.Password, c.Host, c.Port, c.DBName)
 					Expect(err).NotTo(HaveOccurred())
 					defer db.Close()
 
@@ -400,7 +400,7 @@ var _ = Describe("Enforcer Integration", func() {
 				})
 
 				AfterEach(func() {
-					db, err := database.NewConnection(rootConfig.User, rootConfig.Password, rootConfig.Host, rootConfig.Port, rootConfig.DBName)
+					db, err := database.NewConnection(c.User, c.Password, c.Host, c.Port, c.DBName)
 					Expect(err).NotTo(HaveOccurred())
 					defer db.Close()
 
