@@ -44,7 +44,7 @@ func main() {
 	readOnlyUser := config.ReadOnlyUser
 	brokerDBName := config.DBName
 
-	db, err := database.NewConnection(config)
+	db, err := database.NewConnection(adminUser, config.Password, config.Host, config.Port, brokerDBName)
 	if db != nil {
 		defer db.Close()
 	}

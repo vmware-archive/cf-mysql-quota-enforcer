@@ -58,10 +58,12 @@ var _ = Describe("Enforcer Integration", func() {
 		Expect(tableSizeMB(dbName, tableName, db)).To(BeNumerically(">=", numRows))
 	}
 
-	var userConfigs []config.Config
-	var dbNames []string
+	var (
+		userConfigs []config.Config
+		dbNames     []string
 
-	var readOnlyUser string
+		readOnlyUser string
+	)
 
 	BeforeEach(func() {
 		// MySQL mandates usernames are <= 16 chars
@@ -203,13 +205,13 @@ var _ = Describe("Enforcer Integration", func() {
 
 		Context("when multiple databases exist with multiple users", func() {
 			var (
-				user0Connection, user1Connection, user2Connection *sql.DB
+				db, user0Connection, user1Connection, user2Connection *sql.DB
+				err                                                   error
 			)
 
 			BeforeEach(func() {
-				db, err := database.NewConnection(rootConfig)
+				db, err = database.NewConnection(rootConfig.User, rootConfig.Password, rootConfig.Host, rootConfig.Port, rootConfig.DBName)
 				Expect(err).NotTo(HaveOccurred())
-				defer db.Close()
 
 				for _, dbName := range dbNames {
 					_, err = exec(db, fmt.Sprintf(
@@ -234,19 +236,17 @@ var _ = Describe("Enforcer Integration", func() {
 					Expect(err).NotTo(HaveOccurred())
 				}
 
-				user0Connection, err = database.NewConnection(userConfigs[0])
+				user0Connection, err = database.NewConnection(userConfigs[0].User, userConfigs[0].Password, userConfigs[0].Host, userConfigs[0].Port, userConfigs[0].DBName)
 				Expect(err).NotTo(HaveOccurred())
 
-				user1Connection, err = database.NewConnection(userConfigs[1])
+				user1Connection, err = database.NewConnection(userConfigs[1].User, userConfigs[1].Password, userConfigs[1].Host, userConfigs[1].Port, userConfigs[1].DBName)
 				Expect(err).NotTo(HaveOccurred())
 
-				user2Connection, err = database.NewConnection(userConfigs[2])
+				user2Connection, err = database.NewConnection(userConfigs[2].User, userConfigs[2].Password, userConfigs[2].Host, userConfigs[2].Port, userConfigs[2].DBName)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
 			AfterEach(func() {
-				db, err := database.NewConnection(rootConfig)
-				Expect(err).NotTo(HaveOccurred())
 				defer db.Close()
 
 				for _, dbName := range dbNames {
@@ -329,7 +329,7 @@ var _ = Describe("Enforcer Integration", func() {
 			})
 
 			It("restores write access after dropping all tables", func() {
-				db, err := database.NewConnection(userConfigs[0])
+				db, err := database.NewConnection(userConfigs[0].User, userConfigs[0].Password, userConfigs[0].Host, userConfigs[0].Port, userConfigs[0].DBName)
 				Expect(err).NotTo(HaveOccurred())
 				defer db.Close()
 
@@ -377,7 +377,7 @@ var _ = Describe("Enforcer Integration", func() {
 					))
 					Expect(err).ToNot(HaveOccurred())
 
-					db, err := database.NewConnection(rootConfig)
+					db, err := database.NewConnection(rootConfig.User, rootConfig.Password, rootConfig.Host, rootConfig.Port, rootConfig.DBName)
 					Expect(err).NotTo(HaveOccurred())
 					defer db.Close()
 
@@ -400,7 +400,7 @@ var _ = Describe("Enforcer Integration", func() {
 				})
 
 				AfterEach(func() {
-					db, err := database.NewConnection(rootConfig)
+					db, err := database.NewConnection(rootConfig.User, rootConfig.Password, rootConfig.Host, rootConfig.Port, rootConfig.DBName)
 					Expect(err).NotTo(HaveOccurred())
 					defer db.Close()
 
