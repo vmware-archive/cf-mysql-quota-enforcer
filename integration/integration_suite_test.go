@@ -45,9 +45,6 @@ func newRootDatabaseConfig(dbName string) config.Config {
 
 	dbConfig.DBName = dbName
 
-	err = dbConfig.Validate()
-	Expect(err).ToNot(HaveOccurred())
-
 	return dbConfig
 }
 
@@ -57,14 +54,14 @@ var _ = BeforeSuite(func() {
 	brokerDBName = uuidWithUnderscores("db")
 	rootConfig = newRootDatabaseConfig(brokerDBName)
 
-	initDB, err := database.NewConnection(initConfig)
+	initDB, err := database.NewConnection(initConfig.User, initConfig.Password, initConfig.Host, initConfig.Port, initConfig.DBName)
 	Expect(err).ToNot(HaveOccurred())
 	defer initDB.Close()
 
 	_, err = initDB.Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", brokerDBName))
 	Expect(err).ToNot(HaveOccurred())
 
-	db, err := database.NewConnection(rootConfig)
+	db, err := database.NewConnection(rootConfig.User, rootConfig.Password, rootConfig.Host, rootConfig.Port, rootConfig.DBName)
 	Expect(err).ToNot(HaveOccurred())
 	defer db.Close()
 
@@ -107,7 +104,7 @@ var _ = AfterSuite(func() {
 
 	var emptyConfig config.Config
 	if rootConfig != emptyConfig {
-		db, err := database.NewConnection(rootConfig)
+		db, err := database.NewConnection(rootConfig.User, rootConfig.Password, rootConfig.Host, rootConfig.Port, rootConfig.DBName)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
