@@ -25,7 +25,7 @@ import (
 )
 
 var brokerDBName string
-var rootConfig config.Config
+var c config.Config
 var binaryPath string
 
 var tempDir string
@@ -36,7 +36,7 @@ func TestEnforcer(t *testing.T) {
 	RunSpecs(t, "Integration Enforcer Suite")
 }
 
-func newRootDatabaseConfig(dbName string) config.Config {
+func newDatabaseConfig(dbName string) config.Config {
 	serviceConfig := service_config.New()
 
 	var dbConfig config.Config
@@ -49,10 +49,10 @@ func newRootDatabaseConfig(dbName string) config.Config {
 }
 
 var _ = BeforeSuite(func() {
-	initConfig := newRootDatabaseConfig("")
+	initConfig := newDatabaseConfig("")
 
 	brokerDBName = uuidWithUnderscores("db")
-	rootConfig = newRootDatabaseConfig(brokerDBName)
+	c = newDatabaseConfig(brokerDBName)
 
 	initDB, err := database.NewConnection(initConfig.User, initConfig.Password, initConfig.Host, initConfig.Port, initConfig.DBName)
 	Expect(err).ToNot(HaveOccurred())
@@ -61,7 +61,7 @@ var _ = BeforeSuite(func() {
 	_, err = initDB.Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", brokerDBName))
 	Expect(err).ToNot(HaveOccurred())
 
-	db, err := database.NewConnection(rootConfig.User, rootConfig.Password, rootConfig.Host, rootConfig.Port, rootConfig.DBName)
+	db, err := database.NewConnection(c.User, c.Password, c.Host, c.Port, c.DBName)
 	Expect(err).ToNot(HaveOccurred())
 	defer db.Close()
 
@@ -103,8 +103,8 @@ var _ = AfterSuite(func() {
 	}
 
 	var emptyConfig config.Config
-	if rootConfig != emptyConfig {
-		db, err := database.NewConnection(rootConfig.User, rootConfig.Password, rootConfig.Host, rootConfig.Port, rootConfig.DBName)
+	if c != emptyConfig {
+		db, err := database.NewConnection(c.User, c.Password, c.Host, c.Port, c.DBName)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
@@ -155,7 +155,7 @@ func writeConfig() {
 	fileToWrite, err := os.Create(configPath)
 	Expect(err).ToNot(HaveOccurred())
 
-	bytes, err := json.MarshalIndent(rootConfig, "", "  ")
+	bytes, err := json.MarshalIndent(c, "", "  ")
 	Expect(err).ToNot(HaveOccurred())
 
 	_, err = fileToWrite.Write(bytes)
