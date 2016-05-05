@@ -17,7 +17,7 @@ var _ = Describe("Config", func() {
 				Port:         9999,
 				User:         "fake-user",
 				Password:     "fake-password",
-				ReadOnlyUser: "fake-read-only-user",
+				IgnoredUsers: []string{"fake-read-only-user"},
 				DBName:       "fake-db-name",
 			}
 		})
@@ -63,15 +63,14 @@ var _ = Describe("Config", func() {
 			})
 		})
 
-		Context("when ReadOnlyUser is not specified", func() {
+		Context("when IgnoredUsers is not specified", func() {
 			BeforeEach(func() {
-				config.ReadOnlyUser = ""
+				config.IgnoredUsers = []string{}
 			})
 
-			It("returns a validation error", func() {
+			It("does not return a validation error", func() {
 				err := config.Validate()
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("ReadOnlyUser"))
+				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 

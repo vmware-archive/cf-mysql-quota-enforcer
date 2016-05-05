@@ -40,11 +40,11 @@ func main() {
 		logger.Fatal("Invalid config", err)
 	}
 
-	adminUser := config.User
+	user := config.User
 	readOnlyUser := config.ReadOnlyUser
 	brokerDBName := config.DBName
 
-	db, err := database.NewConnection(adminUser, config.Password, config.Host, config.Port, brokerDBName)
+	db, err := database.NewConnection(user, config.Password, config.Host, config.Port, brokerDBName)
 	if db != nil {
 		defer db.Close()
 	}
@@ -58,10 +58,10 @@ func main() {
 		lager.Data{
 			"Host":         config.Host,
 			"Port":         config.Port,
-			"User":         adminUser,
+			"User":         user,
 			"DatabaseName": brokerDBName,
 		})
-	ignoredUsers := []string{adminUser, readOnlyUser}
+	ignoredUsers := []string{user, readOnlyUser}
 	ignoredUsers = append(ignoredUsers, config.IgnoredUsers...)
 
 	violatorRepo := database.NewViolatorRepo(brokerDBName, ignoredUsers, db, logger)
