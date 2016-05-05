@@ -434,6 +434,100 @@ var _ = Describe("Enforcer Integration", func() {
 					Expect(err.Error()).To(ContainSubstring("INSERT command denied"))
 				})
 			})
+
+			Context("quota enforcer user", func() {
+				BeforeEach(func() {
+					db, err = database.NewConnection(c.User, c.Password, c.Host, c.Port, c.DBName)
+					Expect(err).NotTo(HaveOccurred())
+					_, err = db.Exec(fmt.Sprintf("GRANT INSERT ON %s.* TO '%s' WITH GRANT OPTION",
+						userConfigs[0].DBName,
+						quotaEnforcerUser,
+					))
+					createSizedTable(maxStorageMB+1, userConfigs[0].DBName, dataTableName, user0Connection)
+				})
+
+				AfterEach(func() {
+					_, err = exec(db, fmt.Sprintf("DROP DATABASE IF EXISTS %s", userConfigs[0].DBName))
+					Expect(err).NotTo(HaveOccurred())
+
+					_, err = exec(db, fmt.Sprintf(
+						"REVOKE INSERT, GRANT OPTION ON %s.* FROM '%s'", userConfigs[0].DBName, quotaEnforcerUser))
+					Expect(err).NotTo(HaveOccurred())
+
+					_, err = exec(db, "FLUSH PRIVILEGES")
+					Expect(err).NotTo(HaveOccurred())
+
+				})
+
+				It("does not modify its own user privileges", func() {
+					runEnforcerOnce()
+
+					rows, err := db.Query(fmt.Sprintf("SHOW GRANTS FOR '%s'", quotaEnforcerUser))
+					Expect(err).NotTo(HaveOccurred())
+
+					var grants []string
+					var grant string
+					for rows.Next() {
+						err = rows.Scan(&grant)
+						Expect(err).NotTo(HaveOccurred())
+						grants = append(grants, grant)
+					}
+
+					Expect(grants).To(ConsistOf(
+						ContainSubstring("GRANT ALL PRIVILEGES ON *.*"),
+						ContainSubstring("GRANT INSERT ON `%s`.*", userConfigs[0].DBName),
+					))
+				})
+			})
+
+			Context("mysql admin user", func() {
+				BeforeEach(func() {
+					db, err = database.NewConnection(c.User, c.Password, c.Host, c.Port, c.DBName)
+					Expect(err).NotTo(HaveOccurred())
+					_, err = db.Exec(fmt.Sprintf("GRANT INSERT ON %s.* TO '%s' WITH GRANT OPTION",
+						userConfigs[0].DBName,
+						fakeAdminUser,
+					))
+					Expect(err).NotTo(HaveOccurred())
+					createSizedTable(maxStorageMB+1, userConfigs[0].DBName, dataTableName, user0Connection)
+				})
+
+				AfterEach(func() {
+					_, err = exec(db, fmt.Sprintf("DROP DATABASE IF EXISTS %s", userConfigs[0].DBName))
+					Expect(err).NotTo(HaveOccurred())
+
+					_, err = exec(db, fmt.Sprintf(
+						"REVOKE ALL PRIVILEGES, GRANT OPTION FROM '%s'", fakeAdminUser))
+					Expect(err).NotTo(HaveOccurred())
+
+					_, err = exec(db, fmt.Sprintf(
+						"DROP USER '%s'", fakeAdminUser))
+					Expect(err).NotTo(HaveOccurred())
+
+					_, err = exec(db, "FLUSH PRIVILEGES")
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("does not modify the admin user's privileges", func() {
+					runEnforcerOnce()
+
+					rows, err := db.Query(fmt.Sprintf("SHOW GRANTS FOR '%s'", fakeAdminUser))
+					Expect(err).NotTo(HaveOccurred())
+
+					var grants []string
+					var grant string
+					for rows.Next() {
+						err = rows.Scan(&grant)
+						Expect(err).NotTo(HaveOccurred())
+						grants = append(grants, grant)
+					}
+
+					Expect(grants).To(ConsistOf(
+						ContainSubstring("GRANT ALL PRIVILEGES ON *.*"),
+						ContainSubstring("GRANT INSERT ON `%s`.*", userConfigs[0].DBName),
+					))
+				})
+			})
 		})
 	})
 })

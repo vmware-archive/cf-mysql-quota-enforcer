@@ -24,12 +24,20 @@ import (
 	"github.com/pivotal-cf-experimental/service-config"
 )
 
+const quotaEnforcerUser = "quota-enforcer-test-user"
+const fakeAdminUser = "fake-admin-user"
+
 var brokerDBName string
 var c config.Config
 var binaryPath string
 
 var tempDir string
 var configPath string
+
+type AdminCredentials struct {
+	User     string `yaml:"AdminUser" validate:"nonzero"`
+	Password string `yaml:"AdminPassword" validate:"nonzero"`
+}
 
 func TestEnforcer(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -44,8 +52,19 @@ func newDatabaseConfig(dbName string) config.Config {
 	Expect(err).ToNot(HaveOccurred())
 
 	dbConfig.DBName = dbName
+	dbConfig.IgnoredUsers = append(dbConfig.IgnoredUsers, fakeAdminUser)
 
 	return dbConfig
+}
+
+func adminCredentials() AdminCredentials {
+	serviceConfig := service_config.New()
+
+	var adminCreds AdminCredentials
+	err := serviceConfig.Read(&adminCreds)
+	Expect(err).ToNot(HaveOccurred())
+
+	return adminCreds
 }
 
 var _ = BeforeSuite(func() {
@@ -54,7 +73,9 @@ var _ = BeforeSuite(func() {
 	brokerDBName = uuidWithUnderscores("db")
 	c = newDatabaseConfig(brokerDBName)
 
-	initDB, err := database.NewConnection(initConfig.User, initConfig.Password, initConfig.Host, initConfig.Port, initConfig.DBName)
+	adminCreds := adminCredentials()
+
+	initDB, err := database.NewConnection(adminCreds.User, adminCreds.Password, initConfig.Host, initConfig.Port, initConfig.DBName)
 	Expect(err).ToNot(HaveOccurred())
 	defer initDB.Close()
 
@@ -63,6 +84,20 @@ var _ = BeforeSuite(func() {
 
 	db, err := database.NewConnection(c.User, c.Password, c.Host, c.Port, c.DBName)
 	Expect(err).ToNot(HaveOccurred())
+
+	_, err = initDB.Exec(fmt.Sprintf("GRANT ALL PRIVILEGES ON *.* TO '%s' IDENTIFIED BY '%s' WITH GRANT OPTION",
+		quotaEnforcerUser,
+		"password",
+	))
+
+	_, err = initDB.Exec(fmt.Sprintf("GRANT ALL PRIVILEGES ON *.* TO '%s' IDENTIFIED BY '%s' WITH GRANT OPTION",
+		fakeAdminUser,
+		"fake_password",
+	))
+
+	_, err = initDB.Exec("FLUSH PRIVILEGES")
+	Expect(err).NotTo(HaveOccurred())
+
 	defer db.Close()
 
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS service_instances (
@@ -102,18 +137,15 @@ var _ = AfterSuite(func() {
 		Expect(os.IsExist(err)).To(BeFalse())
 	}
 
-	var emptyConfig config.Config
-	if c != emptyConfig {
-		db, err := database.NewConnection(c.User, c.Password, c.Host, c.Port, c.DBName)
-		Expect(err).ToNot(HaveOccurred())
-		defer db.Close()
+	db, err := database.NewConnection(c.User, c.Password, c.Host, c.Port, c.DBName)
+	Expect(err).ToNot(HaveOccurred())
+	defer db.Close()
 
-		_, err = db.Exec("DROP TABLE IF EXISTS service_instances")
-		Expect(err).ToNot(HaveOccurred())
+	_, err = db.Exec("DROP TABLE IF EXISTS service_instances")
+	Expect(err).ToNot(HaveOccurred())
 
-		_, err = db.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %s", brokerDBName))
-		Expect(err).ToNot(HaveOccurred())
-	}
+	_, err = db.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %s", brokerDBName))
+	Expect(err).ToNot(HaveOccurred())
 })
 
 func startEnforcerWithFlags(flags ...string) *gexec.Session {

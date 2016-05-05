@@ -34,7 +34,8 @@ var _ = Describe("ReformerRepo", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		logger = lagertest.NewTestLogger("ReformerRepo test")
-		repo = NewReformerRepo(brokerDBName, adminUser, readOnlyUser, fakeDB, logger)
+		ignoredUsers := []string{adminUser, readOnlyUser}
+		repo = NewReformerRepo(brokerDBName, ignoredUsers, fakeDB, logger)
 	})
 
 	AfterEach(func() {
