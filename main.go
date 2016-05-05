@@ -61,9 +61,11 @@ func main() {
 			"User":         adminUser,
 			"DatabaseName": brokerDBName,
 		})
+	ignoredUsers := []string{adminUser, readOnlyUser}
+	ignoredUsers = append(ignoredUsers, config.IgnoredUsers...)
 
-	violatorRepo := database.NewViolatorRepo(brokerDBName, adminUser, readOnlyUser, db, logger)
-	reformerRepo := database.NewReformerRepo(brokerDBName, adminUser, readOnlyUser, db, logger)
+	violatorRepo := database.NewViolatorRepo(brokerDBName, ignoredUsers, db, logger)
+	reformerRepo := database.NewReformerRepo(brokerDBName, ignoredUsers, db, logger)
 
 	e := enforcer.NewEnforcer(violatorRepo, reformerRepo, logger)
 	r := enforcer.NewRunner(e, logger)

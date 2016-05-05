@@ -16,11 +16,7 @@ import (
 
 var _ = Describe("ViolatorRepo", func() {
 
-	const (
-		brokerDBName = "fake_broker_db_name"
-		adminUser    = "fake_admin_user"
-		readOnlyUser = "fake_read_only_user"
-	)
+	const brokerDBName = "fake_broker_db_name"
 
 	var (
 		logger *lagertest.TestLogger
@@ -34,7 +30,8 @@ var _ = Describe("ViolatorRepo", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		logger = lagertest.NewTestLogger("ViolatorRepo test")
-		repo = NewViolatorRepo(brokerDBName, adminUser, readOnlyUser, fakeDB, logger)
+		ignoredUsers := []string{"fake_admin_user"}
+		repo = NewViolatorRepo(brokerDBName, ignoredUsers, fakeDB, logger)
 	})
 
 	AfterEach(func() {

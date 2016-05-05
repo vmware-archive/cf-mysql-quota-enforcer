@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/pivotal-golang/lager"
 )
@@ -14,8 +15,7 @@ FROM (
 	FROM   (
 		SELECT DISTINCT Db AS name, User AS user from mysql.db
 		WHERE  (Insert_priv = 'Y' OR Update_priv = 'Y' OR Create_priv = 'Y')
-		AND User <> '%s'
-		AND User <> '%s'
+		AND User NOT IN ('%s')
 	) AS dbs
 	JOIN %s.service_instances AS instances ON dbs.name = instances.db_name COLLATE utf8_general_ci
 	JOIN information_schema.tables AS tables ON tables.table_schema = dbs.name
@@ -24,7 +24,8 @@ FROM (
 ) AS violators
 `
 
-func NewViolatorRepo(brokerDBName, adminUser, readOnlyUser string, db *sql.DB, logger lager.Logger) Repo {
-	query := fmt.Sprintf(violatorsQueryPattern, adminUser, readOnlyUser, brokerDBName)
+func NewViolatorRepo(brokerDBName string, ignoredUsers []string, db *sql.DB, logger lager.Logger) Repo {
+	quotedIgnoredUsers := strings.Join(ignoredUsers, "','")
+	query := fmt.Sprintf(violatorsQueryPattern, quotedIgnoredUsers, brokerDBName)
 	return newRepo(query, db, logger, "quota violator")
 }
