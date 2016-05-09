@@ -1,7 +1,10 @@
 ---
-Host: 127.0.0.1
+Host: 10.244.7.2
 Port: 3306
 User: root
 Password: password
-ReadOnlyUser: roadmin
+IgnoredUsers:
+- roadmin
 DBName: development
+AdminUser: root
+AdminPassword: password
