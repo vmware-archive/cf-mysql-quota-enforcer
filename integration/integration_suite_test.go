@@ -1,6 +1,7 @@
 package enforcer_test
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -24,15 +25,16 @@ import (
 	"github.com/pivotal-cf-experimental/service-config"
 )
 
-const quotaEnforcerUser = "quota-enforcer-test-user"
-const fakeAdminUser = "fake-admin-user"
-
 var brokerDBName string
 var c config.Config
 var binaryPath string
 
 var tempDir string
 var configPath string
+
+var adminDB *sql.DB
+var adminCreds AdminCredentials
+var initConfig config.Config
 
 type AdminCredentials struct {
 	User     string `yaml:"AdminUser" validate:"nonzero"`
@@ -52,7 +54,7 @@ func newDatabaseConfig(dbName string) config.Config {
 	Expect(err).ToNot(HaveOccurred())
 
 	dbConfig.DBName = dbName
-	dbConfig.IgnoredUsers = append(dbConfig.IgnoredUsers, fakeAdminUser)
+	dbConfig.IgnoredUsers = append(dbConfig.IgnoredUsers, "fake-admin-user")
 
 	return dbConfig
 }
@@ -68,34 +70,31 @@ func adminCredentials() AdminCredentials {
 }
 
 var _ = BeforeSuite(func() {
-	initConfig := newDatabaseConfig("")
+	initConfig = newDatabaseConfig("")
 
 	brokerDBName = uuidWithUnderscores("db")
 	c = newDatabaseConfig(brokerDBName)
 
-	adminCreds := adminCredentials()
+	adminCreds = adminCredentials()
 
-	initDB, err := database.NewConnection(adminCreds.User, adminCreds.Password, initConfig.Host, initConfig.Port, initConfig.DBName)
+	adminDB, err := database.NewConnection(adminCreds.User, adminCreds.Password, initConfig.Host, initConfig.Port, initConfig.DBName)
 	Expect(err).ToNot(HaveOccurred())
-	defer initDB.Close()
+	defer adminDB.Close()
 
-	_, err = initDB.Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", brokerDBName))
+	_, err = adminDB.Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", brokerDBName))
 	Expect(err).ToNot(HaveOccurred())
 
 	db, err := database.NewConnection(c.User, c.Password, c.Host, c.Port, c.DBName)
 	Expect(err).ToNot(HaveOccurred())
 
-	_, err = initDB.Exec(fmt.Sprintf("GRANT ALL PRIVILEGES ON *.* TO '%s' IDENTIFIED BY '%s' WITH GRANT OPTION",
-		quotaEnforcerUser,
-		"password",
-	))
+	for _, ignoredUser := range initConfig.IgnoredUsers {
+		_, err = adminDB.Exec(fmt.Sprintf("GRANT ALL PRIVILEGES ON *.* TO '%s' IDENTIFIED BY '%s' WITH GRANT OPTION",
+			ignoredUser,
+			"password",
+		))
+	}
 
-	_, err = initDB.Exec(fmt.Sprintf("GRANT ALL PRIVILEGES ON *.* TO '%s' IDENTIFIED BY '%s' WITH GRANT OPTION",
-		fakeAdminUser,
-		"fake_password",
-	))
-
-	_, err = initDB.Exec("FLUSH PRIVILEGES")
+	_, err = adminDB.Exec("FLUSH PRIVILEGES")
 	Expect(err).NotTo(HaveOccurred())
 
 	defer db.Close()
