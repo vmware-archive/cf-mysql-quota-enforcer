@@ -17,7 +17,7 @@ var _ = Describe("Config", func() {
 				Port:         9999,
 				User:         "fake-user",
 				Password:     "fake-password",
-				IgnoredUsers: []string{"fake-read-only-user"},
+				IgnoredUsers: []string{"fake-ignored-user"},
 				DBName:       "fake-db-name",
 			}
 		})
