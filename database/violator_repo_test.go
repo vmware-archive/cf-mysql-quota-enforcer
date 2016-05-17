@@ -14,7 +14,7 @@ import (
 	"github.com/pivotal-golang/lager/lagertest"
 )
 
-var _ = Describe("ViolatorRepo", func() {
+var _ = XDescribe("ViolatorRepo", func() {
 
 	const brokerDBName = "fake_broker_db_name"
 

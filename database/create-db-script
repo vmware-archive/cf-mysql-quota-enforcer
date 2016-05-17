@@ -1,0 +1,3 @@
+#!/bin/bash
+
+mysql -uroot -ppassword -h 10.244.7.2 -e"CREATE DATABASE IF NOT EXISTS fake_db_name"
