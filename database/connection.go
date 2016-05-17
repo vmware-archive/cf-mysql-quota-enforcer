@@ -4,6 +4,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
+)
+
+const (
+	dbWaitTimeout = 60
 )
 
 func NewConnection(username, password, host string, port int, dbName string) (*sql.DB, error) {
@@ -22,6 +27,8 @@ func NewConnection(username, password, host string, port int, dbName string) (*s
 		port,
 		dbName,
 	))
+
+	time.Sleep(dbWaitTimeout * time.Second)
 
 	if dbConnection.Ping() != nil { // error case
 		return nil, errors.New("Could not open DB connection")

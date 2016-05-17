@@ -29,7 +29,7 @@ var _ = Describe("NewConnection", func() {
 		time.Sleep(10 * time.Second)
 	})
 
-	FContext("When the server is stopped", func() {
+	Context("When the server is stopped", func() {
 
 		It("fails to deliver a connection", func() {
 			_, err := database.NewConnection(dbUser, dbPassword, dbHost, dbPort, dbName)
@@ -44,11 +44,12 @@ var _ = Describe("NewConnection", func() {
 		BeforeEach(func() {
 			sendRequest("http://10.244.7.2:9200/start_mysql_join", "POST")
 			fmt.Println("Sent start request. Waiting for server to come up...")
-			time.Sleep(30 * time.Second)
+			time.Sleep(60 * time.Second)
 		})
 
 		It("fails to deliver a connection", func() {
 			_, err := database.NewConnection(dbUser, dbPassword, dbHost, dbPort, dbName)
+			fmt.Println(err.Error())
 			Expect(err).To(HaveOccurred())
 		})
 
@@ -79,6 +80,70 @@ var _ = Describe("NewConnection", func() {
 		It("successfuly delivers a connection", func() {
 			_, err := database.NewConnection(dbUser, dbPassword, dbHost, dbPort, dbName)
 			Expect(err).ToNot(HaveOccurred())
+		})
+
+	})
+
+	Context("When the server takes time to start but that time is less than the configured timeout", func() {
+
+		BeforeEach(func() {
+			go func() {
+				fmt.Println("I'm going to wait 30s...")
+				time.Sleep(30 * time.Second)
+				sendRequest("http://10.244.7.2:9200/start_mysql_join", "POST")
+				fmt.Println("Sent start request. Waiting for server to come up...")
+				time.Sleep(30 * time.Second)
+				fmt.Println("Server is up, creating DB...")
+				cmdName := "/bin/bash"
+				cmdArgs := []string{"/Users/pivotal/workspace/cf-mysql-release/src/github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database/create-db-script"}
+				cmd := exec.Command(cmdName, cmdArgs...)
+				_, err := cmd.Output()
+				Expect(err).ToNot(HaveOccurred())
+			}()
+		})
+
+		AfterEach(func() {
+			cmdName := "/bin/bash"
+			cmdArgs := []string{"/Users/pivotal/workspace/cf-mysql-release/src/github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database/drop-db-script"}
+			cmd := exec.Command(cmdName, cmdArgs...)
+			_, err := cmd.Output()
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("successfully delivers a connection", func() {
+			_, err := database.NewConnection(dbUser, dbPassword, dbHost, dbPort, dbName)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+	})
+
+	FContext("When the server takes time to start but that time is more than the configured timeout", func() {
+
+		BeforeEach(func() {
+			go func() {
+				fmt.Println("I'm going to wait over one min...")
+				time.Sleep(70 * time.Second)
+				sendRequest("http://10.244.7.2:9200/start_mysql_join", "POST")
+				fmt.Println("Sent start request. Waiting for server to come up...")
+				time.Sleep(30 * time.Second)
+				fmt.Println("Server is up, creating DB...")
+				cmdName := "/bin/bash"
+				cmdArgs := []string{"/Users/pivotal/workspace/cf-mysql-release/src/github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database/create-db-script"}
+				cmd := exec.Command(cmdName, cmdArgs...)
+				cmd.Output()
+			}()
+		})
+
+		AfterEach(func() {
+			cmdName := "/bin/bash"
+			cmdArgs := []string{"/Users/pivotal/workspace/cf-mysql-release/src/github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database/drop-db-script"}
+			cmd := exec.Command(cmdName, cmdArgs...)
+			cmd.Output()
+		})
+
+		It("returns an error", func() {
+			_, err := database.NewConnection(dbUser, dbPassword, dbHost, dbPort, dbName)
+			Expect(err).To(HaveOccurred())
 		})
 
 	})
