@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"os/exec"
 	"time"
 
@@ -84,21 +85,20 @@ var _ = Describe("NewConnection", func() {
 
 	})
 
-	Context("When the server takes time to start but that time is less than the configured timeout", func() {
+	FContext("When the server takes time to start but that time is less than the configured timeout", func() {
 
 		BeforeEach(func() {
 			go func() {
-				fmt.Println("I'm going to wait 30s...")
-				time.Sleep(30 * time.Second)
+				fmt.Println("I'm going to wait 20s...")
+				time.Sleep(20 * time.Second)
 				sendRequest("http://10.244.7.2:9200/start_mysql_join", "POST")
 				fmt.Println("Sent start request. Waiting for server to come up...")
-				time.Sleep(30 * time.Second)
+				time.Sleep(20 * time.Second)
 				fmt.Println("Server is up, creating DB...")
 				cmdName := "/bin/bash"
 				cmdArgs := []string{"/Users/pivotal/workspace/cf-mysql-release/src/github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database/create-db-script"}
 				cmd := exec.Command(cmdName, cmdArgs...)
-				_, err := cmd.Output()
-				Expect(err).ToNot(HaveOccurred())
+				cmd.Output()
 			}()
 		})
 
@@ -106,18 +106,31 @@ var _ = Describe("NewConnection", func() {
 			cmdName := "/bin/bash"
 			cmdArgs := []string{"/Users/pivotal/workspace/cf-mysql-release/src/github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database/drop-db-script"}
 			cmd := exec.Command(cmdName, cmdArgs...)
-			_, err := cmd.Output()
-			Expect(err).ToNot(HaveOccurred())
+			cmd.Output()
 		})
 
-		It("successfully delivers a connection", func() {
-			_, err := database.NewConnection(dbUser, dbPassword, dbHost, dbPort, dbName)
-			Expect(err).ToNot(HaveOccurred())
+		It("successfully delivers a connection, and reports how long the startup took", func() {
+			r, w, _ := os.Pipe()
+			var i int
+			Expect(r).ToNot(Equal(nil))
+			Expect(w).ToNot(Equal(nil))
+			tmp := os.Stdout
+			defer func() {
+				os.Stdout = tmp
+			}()
+			os.Stdout = w
+			go func() {
+				database.NewConnection(dbUser, dbPassword, dbHost, dbPort, dbName)
+				w.Close()
+			}()
+			stdout, _ := ioutil.ReadAll(r)
+			fmt.Sscanf(string(stdout), "Database startup took %d seconds", i)
+			Expect(i).To(BeNumerically("<", 60))
 		})
 
 	})
 
-	FContext("When the server takes time to start but that time is more than the configured timeout", func() {
+	Context("When the server takes time to start but that time is more than the configured timeout", func() {
 
 		BeforeEach(func() {
 			go func() {
