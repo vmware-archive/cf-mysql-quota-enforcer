@@ -69,7 +69,12 @@ func main() {
 	reformerRepo := database.NewReformerRepo(brokerDBName, ignoredUsers, db, logger)
 
 	e := enforcer.NewEnforcer(violatorRepo, reformerRepo, logger)
-	r := enforcer.NewRunner(e, clock.DefaultClock(), 1*time.Second, logger)
+	r := enforcer.NewRunner(
+		e,
+		clock.DefaultClock(),
+		time.Duration(config.PauseInSeconds)*time.Second,
+		logger,
+	)
 
 	if *runOnce {
 		logger.Info("Running once")

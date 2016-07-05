@@ -7,3 +7,4 @@ IgnoredUsers:
 - quota-enforcer
 - cluster-health-logger
 DBName: development
+PauseInSeconds: 1

@@ -55,6 +55,7 @@ func newDatabaseConfig(dbName string) config.Config {
 
 	dbConfig.DBName = dbName
 	dbConfig.IgnoredUsers = append(dbConfig.IgnoredUsers, "fake-admin-user")
+	dbConfig.PauseInSeconds = 1
 
 	return dbConfig
 }
