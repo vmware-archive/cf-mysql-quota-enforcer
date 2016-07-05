@@ -46,18 +46,18 @@ func TestEnforcer(t *testing.T) {
 	RunSpecs(t, "Integration Enforcer Suite")
 }
 
-func newDatabaseConfig(dbName string) config.Config {
+func newConfig(dbName string) config.Config {
 	serviceConfig := service_config.New()
 
-	var dbConfig config.Config
-	err := serviceConfig.Read(&dbConfig)
+	var cfg config.Config
+	err := serviceConfig.Read(&cfg)
 	Expect(err).ToNot(HaveOccurred())
 
-	dbConfig.DBName = dbName
-	dbConfig.IgnoredUsers = append(dbConfig.IgnoredUsers, "fake-admin-user")
-	dbConfig.PauseInSeconds = 1
+	cfg.DBName = dbName
+	cfg.IgnoredUsers = append(cfg.IgnoredUsers, "fake-admin-user")
+	cfg.PauseInSeconds = 1
 
-	return dbConfig
+	return cfg
 }
 
 func adminCredentials() AdminCredentials {
@@ -71,10 +71,10 @@ func adminCredentials() AdminCredentials {
 }
 
 var _ = BeforeSuite(func() {
-	initConfig = newDatabaseConfig("")
+	initConfig = newConfig("")
 
 	brokerDBName = uuidWithUnderscores("db")
-	c = newDatabaseConfig(brokerDBName)
+	c = newConfig(brokerDBName)
 
 	adminCreds = adminCredentials()
 
