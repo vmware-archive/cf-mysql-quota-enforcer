@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strconv"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/tedsuo/ifrit"
@@ -68,7 +69,7 @@ func main() {
 	reformerRepo := database.NewReformerRepo(brokerDBName, ignoredUsers, db, logger)
 
 	e := enforcer.NewEnforcer(violatorRepo, reformerRepo, logger)
-	r := enforcer.NewRunner(e, clock.DefaultClock(), logger)
+	r := enforcer.NewRunner(e, clock.DefaultClock(), 1*time.Second, logger)
 
 	if *runOnce {
 		logger.Info("Running once")

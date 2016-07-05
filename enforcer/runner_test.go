@@ -22,6 +22,7 @@ var _ = Describe("Runner", func() {
 		enforcer *enforcerfakes.FakeEnforcer
 		clock    *clockfakes.FakeClock
 		logger   *lagertest.TestLogger
+		pause    time.Duration
 		runner   ifrit.Runner
 		signals  chan os.Signal
 		ready    chan struct{}
@@ -30,8 +31,9 @@ var _ = Describe("Runner", func() {
 	BeforeEach(func() {
 		enforcer = &enforcerfakes.FakeEnforcer{}
 		clock = &clockfakes.FakeClock{}
+		pause = 1 * time.Second
 		logger = lagertest.NewTestLogger("Runner test")
-		runner = enforcerPkg.NewRunner(enforcer, clock, logger)
+		runner = enforcerPkg.NewRunner(enforcer, clock, pause, logger)
 
 		signals = make(chan os.Signal, 1)
 		ready = make(chan struct{})
@@ -54,7 +56,7 @@ var _ = Describe("Runner", func() {
 		runner.Run(signals, ready)
 		Expect(clock.AfterCallCount()).To(BeNumerically(">", 0))
 		for _, sleep := range clock.Invocations()["After"] {
-			Expect(sleep[0]).To(Equal(1 * time.Second))
+			Expect(sleep[0]).To(Equal(pause))
 		}
 	})
 

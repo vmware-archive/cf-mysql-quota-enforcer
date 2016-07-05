@@ -12,13 +12,16 @@ import (
 type runner struct {
 	enforcer Enforcer
 	clock    clock.Clock
+	pause    time.Duration
 	logger   lager.Logger
 }
 
-func NewRunner(enforcer Enforcer, clock clock.Clock, logger lager.Logger) ifrit.Runner {
+func NewRunner(enforcer Enforcer, clock clock.Clock, pause time.Duration,
+	logger lager.Logger) ifrit.Runner {
 	return &runner{
 		enforcer: enforcer,
 		clock:    clock,
+		pause:    pause,
 		logger:   logger,
 	}
 }
@@ -33,7 +36,7 @@ func (r runner) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 		select {
 		case <-signals:
 			return nil
-		case <-r.clock.After(1 * time.Second):
+		case <-r.clock.After(r.pause):
 		}
 	}
 }
