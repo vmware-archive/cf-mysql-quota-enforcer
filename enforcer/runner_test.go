@@ -3,6 +3,7 @@ package enforcer_test
 import (
 	"errors"
 	"os"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -10,6 +11,7 @@ import (
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/clock/clockfakes"
 	enforcerPkg "github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/enforcer"
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/enforcer/enforcerfakes"
+	"github.com/pivotal-golang/lager"
 	"github.com/pivotal-golang/lager/lagertest"
 	"github.com/tedsuo/ifrit"
 )
@@ -63,7 +65,15 @@ var _ = Describe("Runner", func() {
 			}
 			runner.Run(signals, ready)
 			Expect(logger.TestSink.LogMessages()).To(
-				ContainElement(ContainSubstring("failed to uphold the law")))
+				ContainElement(ContainSubstring("Enforcing Failed")))
+
+			for _, entry := range logger.TestSink.Logs() {
+				if strings.Contains(
+					entry.Message, "Enforcing Failed") &&
+					entry.LogLevel != lager.ERROR {
+					Fail("error logged with non-error log level")
+				}
+			}
 		})
 	})
 

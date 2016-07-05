@@ -1,7 +1,6 @@
 package enforcer
 
 import (
-	"fmt"
 	"os"
 	"time"
 
@@ -29,7 +28,7 @@ func (r runner) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	for {
 		err := r.enforcer.EnforceOnce()
 		if err != nil {
-			r.logger.Info(fmt.Sprintf("Enforcing Failed: %s", err.Error()))
+			r.logger.Error("Enforcing Failed", err)
 		}
 		select {
 		case <-signals:
