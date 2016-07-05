@@ -10,11 +10,11 @@ The quota enforcer executable requires either a config file or a config string, 
 
 Examples:
 - `$ cf-mysql-quota-enforcer -configPath=/path/to/config.json`
-- `$ cf-mysql-quota-enforcer -config={"Host": "127.0.0.1", "Port": 3306, "User": "root", "Password": "password", "DBName": "development"}`
+- `$ cf-mysql-quota-enforcer -config='{"Host": "127.0.0.1", "Port": 3306, "User": "root", "Password": "password", "DBName": "development", "PauseInSeconds": 1}'`
 
 
-An example configuration file is provided in `config-example.json`.
-Copy this to `config.json` and edit as necessary; `config.json` is ignored by git.
+An example configuration file is provided in `config-example.yaml`.
+Copy this to `config.yaml` and edit as necessary; `config.yaml` is ignored by git.
 
 ##Testing
 
