@@ -111,5 +111,17 @@ var _ = Describe("Config", func() {
 			})
 		})
 
+		Context("when PauseInSeconds is negative", func() {
+			BeforeEach(func() {
+				config.PauseInSeconds = -1
+			})
+
+			It("returns a validation error", func() {
+				err := config.Validate()
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("PauseInSeconds"))
+			})
+		})
+
 	})
 })

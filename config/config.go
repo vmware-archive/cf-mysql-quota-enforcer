@@ -14,7 +14,7 @@ type Config struct {
 	Password       string   `yaml:"Password" validate:"nonzero"`
 	IgnoredUsers   []string `yaml:"IgnoredUsers"`
 	DBName         string   `yaml:"DBName" validate:"nonzero"`
-	PauseInSeconds int      `yaml:"PauseInSeconds" validate:"nonzero"`
+	PauseInSeconds int      `yaml:"PauseInSeconds" validate:"min=1"`
 }
 
 func (c Config) Validate() error {
