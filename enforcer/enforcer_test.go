@@ -2,7 +2,7 @@ package enforcer_test
 
 import (
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database"
-	databasefakes "github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database/fakes"
+	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database/databasefakes"
 	. "github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/enforcer"
 	"github.com/pivotal-golang/lager/lagertest"
 
