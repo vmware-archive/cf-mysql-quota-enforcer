@@ -13,18 +13,20 @@ type Repo interface {
 }
 
 type repo struct {
-	query  string
-	db     *sql.DB
-	logger lager.Logger
-	logTag string
+	query      string
+	parameters []string
+	db         *sql.DB
+	logger     lager.Logger
+	logTag     string
 }
 
-func newRepo(query string, db *sql.DB, logger lager.Logger, logTag string) Repo {
+func newRepo(query string, parameters []string, db *sql.DB, logger lager.Logger, logTag string) Repo {
 	return &repo{
-		query:  query,
-		db:     db,
-		logger: logger,
-		logTag: logTag,
+		query:      query,
+		parameters: parameters,
+		db:         db,
+		logger:     logger,
+		logTag:     logTag,
 	}
 }
 
@@ -33,7 +35,12 @@ func (r repo) All() ([]Database, error) {
 
 	databases := []Database{}
 
-	rows, err := r.db.Query(r.query)
+	parametersInterface := make([]interface{}, len(r.parameters))
+	for i, v := range r.parameters {
+		parametersInterface[i] = v
+	}
+
+	rows, err := r.db.Query(r.query, parametersInterface...)
 	if err != nil {
 		return databases, fmt.Errorf("Error executing '%s'.All: %s", r.logTag, err.Error())
 	}

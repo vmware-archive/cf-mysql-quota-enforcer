@@ -66,6 +66,25 @@ var _ = Describe("ReformerRepo", func() {
 			))
 		})
 
+		It("passes ignored users as ordered parameters", func() {
+			sqlmock.ExpectQuery("NOT IN \\(\\?,\\?\\)").
+				WithArgs().
+				WillReturnRows(sqlmock.NewRows(tableSchemaColumns))
+
+			_, err := repo.All()
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("does not filter users when ignoredUsers is empty", func() {
+			repo = NewReformerRepo(brokerDBName, []string{}, fakeDB, logger)
+			sqlmock.ExpectQuery("Create_priv = 'N'\\)\\s+\\) AS violator_dbs").
+				WithArgs().
+				WillReturnRows(sqlmock.NewRows(tableSchemaColumns))
+
+			_, err := repo.All()
+			Expect(err).ToNot(HaveOccurred())
+		})
+
 		Context("when there are no reformers", func() {
 			BeforeEach(func() {
 				sqlmock.ExpectQuery(matchAny).

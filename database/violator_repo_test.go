@@ -61,6 +61,28 @@ var _ = Describe("ViolatorRepo", func() {
 			))
 		})
 
+		It("passes ignored users as ordered parameters", func() {
+			sqlmock.ExpectQuery("NOT IN \\(\\?\\)").
+				WithArgs().
+				WillReturnRows(
+					sqlmock.NewRows(tableSchemaColumns).
+						AddRow("fake-database-1", "cf_fake-user-1").
+						AddRow("fake-database-2", "cf_fake-user-2"))
+
+			_, err := repo.All()
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("does not filter users when ignoredUsers is empty", func() {
+			repo = NewViolatorRepo(brokerDBName, []string{}, fakeDB, logger)
+			sqlmock.ExpectQuery("Create_priv = 'Y'\\)\\s+\\) AS dbs").
+				WithArgs().
+				WillReturnRows(sqlmock.NewRows(tableSchemaColumns))
+
+			_, err := repo.All()
+			Expect(err).ToNot(HaveOccurred())
+		})
+
 		Context("when there are no violators", func() {
 			BeforeEach(func() {
 				sqlmock.ExpectQuery(matchAny).
