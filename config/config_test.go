@@ -13,12 +13,13 @@ var _ = Describe("Config", func() {
 
 		BeforeEach(func() {
 			config = Config{
-				Host:         "fake-host",
-				Port:         9999,
-				User:         "fake-user",
-				Password:     "fake-password",
-				IgnoredUsers: []string{"fake-ignored-user"},
-				DBName:       "fake-db-name",
+				Host:           "fake-host",
+				Port:           9999,
+				User:           "fake-user",
+				Password:       "fake-password",
+				IgnoredUsers:   []string{"fake-ignored-user"},
+				DBName:         "fake-db-name",
+				PauseInSeconds: 1,
 			}
 		})
 
@@ -97,5 +98,30 @@ var _ = Describe("Config", func() {
 				Expect(err.Error()).To(ContainSubstring("DBName"))
 			})
 		})
+
+		Context("when PauseInSeconds is not specified", func() {
+			BeforeEach(func() {
+				config.PauseInSeconds = 0
+			})
+
+			It("returns a validation error", func() {
+				err := config.Validate()
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("PauseInSeconds"))
+			})
+		})
+
+		Context("when PauseInSeconds is negative", func() {
+			BeforeEach(func() {
+				config.PauseInSeconds = -1
+			})
+
+			It("returns a validation error", func() {
+				err := config.Validate()
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("PauseInSeconds"))
+			})
+		})
+
 	})
 })

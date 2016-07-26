@@ -6,11 +6,13 @@ import (
 	"io/ioutil"
 	"os"
 	"strconv"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/tedsuo/ifrit"
 
 	"github.com/cloudfoundry-incubator/cf-lager"
+	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/clock"
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/config"
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database"
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/enforcer"
@@ -67,7 +69,12 @@ func main() {
 	reformerRepo := database.NewReformerRepo(brokerDBName, ignoredUsers, db, logger)
 
 	e := enforcer.NewEnforcer(violatorRepo, reformerRepo, logger)
-	r := enforcer.NewRunner(e, logger)
+	r := enforcer.NewRunner(
+		e,
+		clock.DefaultClock(),
+		time.Duration(config.PauseInSeconds)*time.Second,
+		logger,
+	)
 
 	if *runOnce {
 		logger.Info("Running once")

@@ -1,38 +1,42 @@
 package enforcer
 
 import (
-	"fmt"
 	"os"
 	"time"
 
+	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/clock"
 	"github.com/pivotal-golang/lager"
 	"github.com/tedsuo/ifrit"
 )
 
 type runner struct {
 	enforcer Enforcer
+	clock    clock.Clock
+	pause    time.Duration
 	logger   lager.Logger
 }
 
-func NewRunner(enforcer Enforcer, logger lager.Logger) ifrit.Runner {
+func NewRunner(enforcer Enforcer, clock clock.Clock, pause time.Duration,
+	logger lager.Logger) ifrit.Runner {
 	return &runner{
 		enforcer: enforcer,
+		clock:    clock,
+		pause:    pause,
 		logger:   logger,
 	}
 }
 
 func (r runner) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
-	go func() {
-		for {
-			err := r.enforcer.EnforceOnce()
-			if err != nil {
-				r.logger.Info(fmt.Sprintf("Enforcing Failed: %s", err.Error()))
-			}
-			time.Sleep(1 * time.Second)
-		}
-	}()
-
 	close(ready)
-	<-signals
-	return nil
+	for {
+		err := r.enforcer.EnforceOnce()
+		if err != nil {
+			r.logger.Error("Enforcing Failed", err)
+		}
+		select {
+		case <-signals:
+			return nil
+		case <-r.clock.After(r.pause):
+		}
+	}
 }

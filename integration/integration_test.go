@@ -75,31 +75,34 @@ var _ = Describe("Enforcer Integration", func() {
 		}
 
 		user0Config := config.Config{
-			Host:     c.Host,
-			Port:     c.Port,
-			User:     user0,
-			Password: uuidWithUnderscores("password"),
-			DBName:   dbNames[0],
+			Host:           c.Host,
+			Port:           c.Port,
+			User:           user0,
+			Password:       uuidWithUnderscores("password"),
+			DBName:         dbNames[0],
+			PauseInSeconds: 1,
 		}
 		err := user0Config.Validate()
 		Expect(err).ToNot(HaveOccurred())
 
 		user1Config := config.Config{
-			Host:     c.Host,
-			Port:     c.Port,
-			User:     user1,
-			Password: uuidWithUnderscores("password"),
-			DBName:   dbNames[0],
+			Host:           c.Host,
+			Port:           c.Port,
+			User:           user1,
+			Password:       uuidWithUnderscores("password"),
+			DBName:         dbNames[0],
+			PauseInSeconds: 1,
 		}
 		err = user1Config.Validate()
 		Expect(err).ToNot(HaveOccurred())
 
 		user2Config := config.Config{
-			Host:     c.Host,
-			Port:     c.Port,
-			User:     user2,
-			Password: uuidWithUnderscores("password"),
-			DBName:   dbNames[1],
+			Host:           c.Host,
+			Port:           c.Port,
+			User:           user2,
+			Password:       uuidWithUnderscores("password"),
+			DBName:         dbNames[1],
+			PauseInSeconds: 1,
 		}
 		err = user2Config.Validate()
 		Expect(err).ToNot(HaveOccurred())
