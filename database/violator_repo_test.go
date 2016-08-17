@@ -22,11 +22,12 @@ var _ = Describe("ViolatorRepo", func() {
 		logger *lagertest.TestLogger
 		repo   Repo
 		fakeDB *sql.DB
+		mock   sqlmock.Sqlmock
 	)
 
 	BeforeEach(func() {
 		var err error
-		fakeDB, err = sqlmock.New()
+		fakeDB, mock, err = sqlmock.New()
 		Expect(err).ToNot(HaveOccurred())
 
 		logger = lagertest.NewTestLogger("ViolatorRepo test")
@@ -35,8 +36,7 @@ var _ = Describe("ViolatorRepo", func() {
 	})
 
 	AfterEach(func() {
-		err := fakeDB.Close()
-		Expect(err).ToNot(HaveOccurred())
+		Expect(mock.ExpectationsWereMet()).To(Succeed())
 	})
 
 	Describe("All", func() {
@@ -46,7 +46,7 @@ var _ = Describe("ViolatorRepo", func() {
 		)
 
 		It("returns a list of databases that have exceeded their quota", func() {
-			sqlmock.ExpectQuery(matchAny).
+			mock.ExpectQuery(matchAny).
 				WithArgs().
 				WillReturnRows(sqlmock.NewRows(tableSchemaColumns).
 					AddRow("fake-database-1", "cf_fake-user-1").
@@ -62,7 +62,7 @@ var _ = Describe("ViolatorRepo", func() {
 		})
 
 		It("passes ignored users as ordered parameters", func() {
-			sqlmock.ExpectQuery("NOT IN \\(\\?\\)").
+			mock.ExpectQuery("NOT IN \\(\\?\\)").
 				WithArgs().
 				WillReturnRows(
 					sqlmock.NewRows(tableSchemaColumns).
@@ -75,7 +75,7 @@ var _ = Describe("ViolatorRepo", func() {
 
 		It("does not filter users when ignoredUsers is empty", func() {
 			repo = NewViolatorRepo(brokerDBName, []string{}, fakeDB, logger)
-			sqlmock.ExpectQuery("Create_priv = 'Y'\\)\\s+\\) AS dbs").
+			mock.ExpectQuery("Create_priv = 'Y'\\)\\s+\\) AS dbs").
 				WithArgs().
 				WillReturnRows(sqlmock.NewRows(tableSchemaColumns))
 
@@ -85,7 +85,7 @@ var _ = Describe("ViolatorRepo", func() {
 
 		Context("when there are no violators", func() {
 			BeforeEach(func() {
-				sqlmock.ExpectQuery(matchAny).
+				mock.ExpectQuery(matchAny).
 					WithArgs().
 					WillReturnRows(sqlmock.NewRows(tableSchemaColumns))
 			})
@@ -100,7 +100,7 @@ var _ = Describe("ViolatorRepo", func() {
 
 		Context("when the db query fails", func() {
 			BeforeEach(func() {
-				sqlmock.ExpectQuery(matchAny).
+				mock.ExpectQuery(matchAny).
 					WithArgs().
 					WillReturnError(errors.New("fake-query-error"))
 			})

@@ -26,11 +26,12 @@ var _ = Describe("ReformerRepo", func() {
 		logger *lagertest.TestLogger
 		repo   Repo
 		fakeDB *sql.DB
+		mock   sqlmock.Sqlmock
 	)
 
 	BeforeEach(func() {
 		var err error
-		fakeDB, err = sqlmock.New()
+		fakeDB, mock, err = sqlmock.New()
 		Expect(err).ToNot(HaveOccurred())
 
 		logger = lagertest.NewTestLogger("ReformerRepo test")
@@ -39,8 +40,7 @@ var _ = Describe("ReformerRepo", func() {
 	})
 
 	AfterEach(func() {
-		err := fakeDB.Close()
-		Expect(err).ToNot(HaveOccurred())
+		Expect(mock.ExpectationsWereMet()).To(Succeed())
 	})
 
 	Describe("All", func() {
@@ -50,7 +50,7 @@ var _ = Describe("ReformerRepo", func() {
 		)
 
 		It("returns a list of databases that have come under their quota", func() {
-			sqlmock.ExpectQuery(matchAny).
+			mock.ExpectQuery(matchAny).
 				WithArgs().
 				WillReturnRows(
 					sqlmock.NewRows(tableSchemaColumns).
@@ -67,7 +67,7 @@ var _ = Describe("ReformerRepo", func() {
 		})
 
 		It("passes ignored users as ordered parameters", func() {
-			sqlmock.ExpectQuery("NOT IN \\(\\?,\\?\\)").
+			mock.ExpectQuery("NOT IN \\(\\?,\\?\\)").
 				WithArgs().
 				WillReturnRows(sqlmock.NewRows(tableSchemaColumns))
 
@@ -77,7 +77,7 @@ var _ = Describe("ReformerRepo", func() {
 
 		It("does not filter users when ignoredUsers is empty", func() {
 			repo = NewReformerRepo(brokerDBName, []string{}, fakeDB, logger)
-			sqlmock.ExpectQuery("Create_priv = 'N'\\)\\s+\\) AS violator_dbs").
+			mock.ExpectQuery("Create_priv = 'N'\\)\\s+\\) AS violator_dbs").
 				WithArgs().
 				WillReturnRows(sqlmock.NewRows(tableSchemaColumns))
 
@@ -87,7 +87,7 @@ var _ = Describe("ReformerRepo", func() {
 
 		Context("when there are no reformers", func() {
 			BeforeEach(func() {
-				sqlmock.ExpectQuery(matchAny).
+				mock.ExpectQuery(matchAny).
 					WithArgs().
 					WillReturnRows(sqlmock.NewRows(tableSchemaColumns))
 			})
@@ -102,7 +102,7 @@ var _ = Describe("ReformerRepo", func() {
 
 		Context("when the db query fails", func() {
 			BeforeEach(func() {
-				sqlmock.ExpectQuery(matchAny).
+				mock.ExpectQuery(matchAny).
 					WithArgs().
 					WillReturnError(errors.New("fake-query-error"))
 			})
