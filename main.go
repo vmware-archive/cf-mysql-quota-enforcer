@@ -11,13 +11,13 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/tedsuo/ifrit"
 
-	"github.com/cloudfoundry-incubator/cf-lager"
+	"code.cloudfoundry.org/cflager"
+	"code.cloudfoundry.org/lager"
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/clock"
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/config"
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database"
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/enforcer"
 	"github.com/pivotal-cf-experimental/service-config"
-	"github.com/pivotal-golang/lager"
 )
 
 func main() {
@@ -27,9 +27,9 @@ func main() {
 	runOnce := flags.Bool("runOnce", false, "Run only once instead of continuously")
 	pidFile := flags.String("pidFile", "", "Location of pid file")
 	serviceConfig.AddFlags(flags)
-	cf_lager.AddFlags(flags)
+	cflager.AddFlags(flags)
 	flags.Parse(os.Args[1:])
-	logger, _ := cf_lager.New("Quota Enforcer")
+	logger, _ := cflager.New("Quota Enforcer")
 
 	var config config.Config
 	err := serviceConfig.Read(&config)

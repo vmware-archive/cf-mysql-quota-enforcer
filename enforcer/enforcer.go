@@ -3,8 +3,8 @@ package enforcer
 import (
 	"fmt"
 
+	"code.cloudfoundry.org/lager"
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database"
-	"github.com/pivotal-golang/lager"
 )
 
 type Enforcer interface {

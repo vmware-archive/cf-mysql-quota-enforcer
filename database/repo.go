@@ -5,7 +5,7 @@ import (
 
 	"database/sql"
 
-	"github.com/pivotal-golang/lager"
+	"code.cloudfoundry.org/lager"
 )
 
 type Repo interface {

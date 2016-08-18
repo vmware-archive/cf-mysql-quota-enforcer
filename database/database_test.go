@@ -10,8 +10,8 @@ import (
 
 	"database/sql"
 
+	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/pivotal-golang/lager/lagertest"
 )
 
 var _ = Describe("Database", func() {

@@ -1,10 +1,10 @@
 package enforcer_test
 
 import (
+	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database"
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database/databasefakes"
 	. "github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/enforcer"
-	"github.com/pivotal-golang/lager/lagertest"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

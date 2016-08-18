@@ -4,8 +4,8 @@ import (
 	"os"
 	"time"
 
+	"code.cloudfoundry.org/lager"
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/clock"
-	"github.com/pivotal-golang/lager"
 	"github.com/tedsuo/ifrit"
 )
 

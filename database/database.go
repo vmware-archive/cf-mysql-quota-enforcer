@@ -5,7 +5,7 @@ import (
 
 	"database/sql"
 
-	"github.com/pivotal-golang/lager"
+	"code.cloudfoundry.org/lager"
 )
 
 // Sprintf thinks the % sign is a formatting directive, so we escape it with a second %.

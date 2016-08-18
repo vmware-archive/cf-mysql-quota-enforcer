@@ -10,8 +10,8 @@ import (
 
 	"errors"
 
+	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/pivotal-golang/lager/lagertest"
 )
 
 var _ = Describe("ViolatorRepo", func() {

@@ -6,13 +6,13 @@ import (
 	"strings"
 	"time"
 
+	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/clock/clockfakes"
 	enforcerPkg "github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/enforcer"
 	"github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/enforcer/enforcerfakes"
-	"github.com/pivotal-golang/lager"
-	"github.com/pivotal-golang/lager/lagertest"
 	"github.com/tedsuo/ifrit"
 )
 
