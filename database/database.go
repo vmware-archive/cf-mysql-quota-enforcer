@@ -89,7 +89,7 @@ func (d database) GrantPrivileges() error {
 func (d database) KillActiveConnections() error {
 	d.logger.Info(fmt.Sprintf("Killing active connections to database '%s'", d.name))
 
-	rows, err := d.db.Query("SELECT ID FROM INFORMATION_SCHEMA.PROCESSLIST WHERE DB = ? AND USER <> 'root'", d.name)
+	rows, err := d.db.Query("SELECT ID FROM INFORMATION_SCHEMA.PROCESSLIST WHERE DB = ?", d.name)
 	if err != nil {
 		return fmt.Errorf("Getting list of open connections to database '%s': %s", d.name, err.Error())
 	}

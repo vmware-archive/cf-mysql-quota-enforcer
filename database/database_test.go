@@ -177,7 +177,7 @@ var _ = Describe("Database", func() {
 	Describe("KillActiveConnections", func() {
 		var (
 			processListColumns    = []string{"ID"}
-			processQueryPattern   = `SELECT ID FROM INFORMATION_SCHEMA.PROCESSLIST WHERE DB = \? AND USER <> 'root'`
+			processQueryPattern   = `SELECT ID FROM INFORMATION_SCHEMA.PROCESSLIST WHERE DB = \?$`
 			killConnectionPattern = "KILL CONNECTION \\?"
 		)
 
