@@ -77,7 +77,7 @@ var _ = Describe("ReformerRepo", func() {
 
 		It("does not filter users when ignoredUsers is empty", func() {
 			repo = NewReformerRepo(brokerDBName, []string{}, fakeDB, logger)
-			mock.ExpectQuery("Create_priv = 'N'\\)\\s+\\) AS violator_dbs").
+			mock.ExpectQuery("'SELECT', 'INSERT', 'UPDATE', 'CREATE'\\)\\s+GROUP BY grantee, table_schema\\s+HAVING count\\(\\*\\) != 4\\s+\\) AS violator_dbs").
 				WithArgs().
 				WillReturnRows(sqlmock.NewRows(tableSchemaColumns))
 

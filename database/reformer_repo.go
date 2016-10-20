@@ -14,9 +14,12 @@ SELECT reformers.name AS reformer_db, reformers.user AS reformer_user
 FROM (
 	SELECT violator_dbs.name, violator_dbs.user, tables.data_length, tables.index_length
 	FROM   (
-		SELECT DISTINCT Db AS name, User AS user from mysql.db
-		WHERE  (Insert_priv = 'N' OR Update_priv = 'N' OR Create_priv = 'N')
-		AND User NOT IN (%s)
+		SELECT DISTINCT table_schema as name, replace(substring_index(grantee, '@', 1), "'", '') AS user
+		FROM information_schema.schema_privileges
+		WHERE privilege_type IN ('SELECT', 'INSERT', 'UPDATE', 'CREATE')
+		  AND replace(substring_index(grantee, '@', 1), "'", '') NOT IN (%s)
+		GROUP BY grantee, table_schema
+		HAVING count(*) != 4
 	) AS violator_dbs
 	JOIN        %s.service_instances AS instances ON violator_dbs.name = instances.db_name COLLATE utf8_general_ci
 	LEFT JOIN   information_schema.tables AS tables ON tables.table_schema = violator_dbs.name
@@ -29,8 +32,11 @@ SELECT reformers.name AS reformer_db, reformers.user AS reformer_user
 FROM (
 	SELECT violator_dbs.name, violator_dbs.user, tables.data_length, tables.index_length
 	FROM   (
-		SELECT DISTINCT Db AS name, User AS user from mysql.db
-		WHERE  (Insert_priv = 'N' OR Update_priv = 'N' OR Create_priv = 'N')
+		SELECT DISTINCT table_schema as name, replace(substring_index(grantee, '@', 1), "'", '') AS user
+		FROM information_schema.schema_privileges
+		WHERE privilege_type IN ('SELECT', 'INSERT', 'UPDATE', 'CREATE')
+		GROUP BY grantee, table_schema
+		HAVING count(*) != 4
 	) AS violator_dbs
 	JOIN        %s.service_instances AS instances ON violator_dbs.name = instances.db_name COLLATE utf8_general_ci
 	LEFT JOIN   information_schema.tables AS tables ON tables.table_schema = violator_dbs.name

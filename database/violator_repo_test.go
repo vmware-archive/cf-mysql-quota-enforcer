@@ -1,6 +1,7 @@
 package database_test
 
 import (
+	"github.com/DATA-DOG/go-sqlmock"
 	. "github.com/pivotal-cf-experimental/cf-mysql-quota-enforcer/database"
 
 	. "github.com/onsi/ginkgo"
@@ -11,7 +12,6 @@ import (
 	"errors"
 
 	"code.cloudfoundry.org/lager/lagertest"
-	"github.com/DATA-DOG/go-sqlmock"
 )
 
 var _ = Describe("ViolatorRepo", func() {
@@ -75,7 +75,7 @@ var _ = Describe("ViolatorRepo", func() {
 
 		It("does not filter users when ignoredUsers is empty", func() {
 			repo = NewViolatorRepo(brokerDBName, []string{}, fakeDB, logger)
-			mock.ExpectQuery("Create_priv = 'Y'\\)\\s+\\) AS dbs").
+			mock.ExpectQuery("'CREATE'\\)\\s+\\) AS dbs").
 				WithArgs().
 				WillReturnRows(sqlmock.NewRows(tableSchemaColumns))
 
