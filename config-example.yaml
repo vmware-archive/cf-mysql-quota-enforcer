@@ -4,7 +4,8 @@ Port: 3306
 User: quota-enforcer
 Password: password
 IgnoredUsers:
-- quota-enforcer
 - cluster-health-logger
 DBName: development
 PauseInSeconds: 1
+AdminUser: root
+AdminPassword: password
