@@ -73,16 +73,6 @@ var _ = Describe("ViolatorRepo", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("does not filter users when ignoredUsers is empty", func() {
-			repo = NewViolatorRepo(brokerDBName, []string{}, fakeDB, logger)
-			mock.ExpectQuery("'CREATE'\\)\\s+\\) AS dbs").
-				WithArgs().
-				WillReturnRows(sqlmock.NewRows(tableSchemaColumns))
-
-			_, err := repo.All()
-			Expect(err).ToNot(HaveOccurred())
-		})
-
 		Context("when there are no violators", func() {
 			BeforeEach(func() {
 				mock.ExpectQuery(matchAny).

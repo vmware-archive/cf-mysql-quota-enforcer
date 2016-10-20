@@ -75,16 +75,6 @@ var _ = Describe("ReformerRepo", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("does not filter users when ignoredUsers is empty", func() {
-			repo = NewReformerRepo(brokerDBName, []string{}, fakeDB, logger)
-			mock.ExpectQuery("'SELECT', 'INSERT', 'UPDATE', 'CREATE'\\)\\s+GROUP BY grantee, table_schema\\s+HAVING count\\(\\*\\) != 4\\s+\\) AS violator_dbs").
-				WithArgs().
-				WillReturnRows(sqlmock.NewRows(tableSchemaColumns))
-
-			_, err := repo.All()
-			Expect(err).ToNot(HaveOccurred())
-		})
-
 		Context("when there are no reformers", func() {
 			BeforeEach(func() {
 				mock.ExpectQuery(matchAny).
