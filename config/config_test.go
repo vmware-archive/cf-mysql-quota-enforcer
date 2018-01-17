@@ -75,18 +75,6 @@ var _ = Describe("Config", func() {
 			})
 		})
 
-		Context("when Password is not specified", func() {
-			BeforeEach(func() {
-				config.Password = ""
-			})
-
-			It("returns a validation error", func() {
-				err := config.Validate()
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("Password"))
-			})
-		})
-
 		Context("when DBName is not specified", func() {
 			BeforeEach(func() {
 				config.DBName = ""
