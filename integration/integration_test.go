@@ -59,8 +59,9 @@ var _ = Describe("Enforcer Integration", func() {
 	}
 
 	var (
-		userConfigs []config.Config
-		dbNames     []string
+		userConfigs    []config.Config
+		dbNames        []string
+		readOnlyConfig config.Config
 	)
 
 	BeforeEach(func() {
@@ -68,6 +69,7 @@ var _ = Describe("Enforcer Integration", func() {
 		user0 := uuidWithUnderscores("user")[:16]
 		user1 := uuidWithUnderscores("user")[:16]
 		user2 := uuidWithUnderscores("user")[:16]
+		readonlyuser := uuidWithUnderscores("user")[:16]
 
 		dbNames = []string{
 			uuidWithUnderscores("cf"),
@@ -112,6 +114,17 @@ var _ = Describe("Enforcer Integration", func() {
 			user1Config,
 			user2Config,
 		}
+
+		readOnlyConfig = config.Config{
+			Host:           c.Host,
+			Port:           c.Port,
+			User:           readonlyuser,
+			Password:       uuidWithUnderscores("password"),
+			DBName:         dbNames[0],
+			PauseInSeconds: 1,
+		}
+		err = user2Config.Validate()
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	Describe("Writing pid file", func() {
@@ -201,8 +214,8 @@ var _ = Describe("Enforcer Integration", func() {
 
 		Context("when multiple databases exist with multiple users", func() {
 			var (
-				db, user0Connection, user1Connection, user2Connection *sql.DB
-				err                                                   error
+				db, user0Connection, user1Connection, user2Connection, readOnlyConnection *sql.DB
+				err                                                                       error
 			)
 
 			BeforeEach(func() {
@@ -232,6 +245,21 @@ var _ = Describe("Enforcer Integration", func() {
 					Expect(err).NotTo(HaveOccurred())
 				}
 
+				_, err = exec(db, fmt.Sprintf(
+					"CREATE USER %s IDENTIFIED BY '%s'", readOnlyConfig.User, readOnlyConfig.Password))
+				Expect(err).NotTo(HaveOccurred())
+
+				_, err = exec(db, fmt.Sprintf(
+					"GRANT SELECT ON %s.* TO %s", readOnlyConfig.DBName, readOnlyConfig.User))
+				Expect(err).NotTo(HaveOccurred())
+
+				_, err = exec(db, fmt.Sprintf(
+					"INSERT INTO read_only_users (username, grantee, created_at, updated_at) VALUES ('%s', '''%s''@''%%''', '2018-01-01 00:00:01', '2018-01-01 00:00:01')", readOnlyConfig.User, readOnlyConfig.User))
+				Expect(err).NotTo(HaveOccurred())
+
+				_, err = exec(db, "FLUSH PRIVILEGES")
+				Expect(err).NotTo(HaveOccurred())
+
 				user0Connection, err = database.NewConnection(userConfigs[0].User, userConfigs[0].Password, userConfigs[0].Host, userConfigs[0].Port, userConfigs[0].DBName)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -239,6 +267,9 @@ var _ = Describe("Enforcer Integration", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				user2Connection, err = database.NewConnection(userConfigs[2].User, userConfigs[2].Password, userConfigs[2].Host, userConfigs[2].Port, userConfigs[2].DBName)
+				Expect(err).NotTo(HaveOccurred())
+
+				readOnlyConnection, err = database.NewConnection(readOnlyConfig.User, readOnlyConfig.Password, readOnlyConfig.Host, readOnlyConfig.Port, readOnlyConfig.DBName)
 				Expect(err).NotTo(HaveOccurred())
 
 				adminDB, err = database.NewConnection(adminCreds.User, adminCreds.Password, initConfig.Host, initConfig.Port, initConfig.DBName)
@@ -257,18 +288,6 @@ var _ = Describe("Enforcer Integration", func() {
 
 				for _, userConfig := range userConfigs {
 					_, err = exec(db, fmt.Sprintf(
-						"DROP TABLE IF EXISTS %s.%s", userConfig.DBName, dataTableName))
-					Expect(err).NotTo(HaveOccurred())
-
-					_, err = exec(db, fmt.Sprintf(
-						"DROP TABLE IF EXISTS %s.%s", userConfig.DBName, tempTableName))
-					Expect(err).NotTo(HaveOccurred())
-
-					_, err = exec(db, fmt.Sprintf(
-						"REVOKE ALL PRIVILEGES, GRANT OPTION FROM %s", userConfig.User))
-					Expect(err).NotTo(HaveOccurred())
-
-					_, err = exec(db, fmt.Sprintf(
 						"DROP USER %s", userConfig.User))
 					Expect(err).NotTo(HaveOccurred())
 
@@ -277,9 +296,18 @@ var _ = Describe("Enforcer Integration", func() {
 					Expect(err).NotTo(HaveOccurred())
 				}
 
+				_, err = exec(db, fmt.Sprintf(
+					"DROP USER %s", readOnlyConfig.User))
+				Expect(err).NotTo(HaveOccurred())
+
+				_, err = exec(db,
+					"FLUSH PRIVILEGES")
+				Expect(err).NotTo(HaveOccurred())
+
 				defer user0Connection.Close()
 				defer user1Connection.Close()
 				defer user2Connection.Close()
+				defer readOnlyConnection.Close()
 			})
 
 			It("Enforces the quota for all users on the same database and does not impact other users on other databases", func() {
@@ -325,6 +353,11 @@ var _ = Describe("Enforcer Integration", func() {
 					_, err = user2Connection.Exec(fmt.Sprintf(
 						"INSERT INTO %s (data) VALUES (?)", unimpactedTableName), []byte{'1'})
 					Expect(err).NotTo(HaveOccurred())
+
+					// Read Only User is still read only
+					_, err = readOnlyConnection.Exec(fmt.Sprintf(
+						"INSERT INTO %s (data) VALUES (?)", dataTableName), []byte{'1'})
+					Expect(err).To(HaveOccurred())
 				})
 			})
 

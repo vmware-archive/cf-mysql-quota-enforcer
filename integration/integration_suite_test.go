@@ -82,7 +82,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 	defer adminDB.Close()
 
-	_, err = adminDB.Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", brokerDBName))
+	_, err = adminDB.Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", c.DBName))
 	Expect(err).ToNot(HaveOccurred())
 
 	db, err := database.NewConnection(c.User, c.Password, c.Host, c.Port, c.DBName)
@@ -106,6 +106,16 @@ var _ = BeforeSuite(func() {
     plan_guid varchar(255),
     max_storage_mb int(11) NOT NULL DEFAULT '0',
     db_name varchar(255),
+    PRIMARY KEY (id)
+	)`)
+	Expect(err).ToNot(HaveOccurred())
+
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS read_only_users (
+    id int(11) NOT NULL AUTO_INCREMENT,
+    username varchar(255),
+    grantee varchar(255),
+    created_at datetime NOT NULL,
+    updated_at datetime NOT NULL,
     PRIMARY KEY (id)
 	)`)
 	Expect(err).ToNot(HaveOccurred())
@@ -141,11 +151,19 @@ var _ = AfterSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 	defer db.Close()
 
-	_, err = db.Exec("DROP TABLE IF EXISTS service_instances")
-	Expect(err).ToNot(HaveOccurred())
-
 	_, err = db.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %s", brokerDBName))
 	Expect(err).ToNot(HaveOccurred())
+
+	adminDB, err := database.NewConnection(adminCreds.User, adminCreds.Password, initConfig.Host, initConfig.Port, initConfig.DBName)
+	Expect(err).ToNot(HaveOccurred())
+	defer adminDB.Close()
+
+	for _, ignoredUser := range initConfig.IgnoredUsers {
+		_, err = adminDB.Exec(fmt.Sprintf("DROP USER IF EXISTS '%s'",
+			ignoredUser,
+		))
+		Expect(err).ToNot(HaveOccurred())
+	}
 })
 
 func startEnforcerWithFlags(flags ...string) *gexec.Session {

@@ -9,4 +9,4 @@ SRC_DIR="$( cd $MY_DIR/.. && pwd  )"
 
 export CONFIG_PATH=${CONFIG_PATH:-$SRC_DIR/config.yaml}
 
-ginkgo -r -p -race -failOnPending -randomizeAllSpecs "$@" ${SRC_DIR}/integration
+ginkgo -r -race -failOnPending -randomizeAllSpecs "$@" ${SRC_DIR}/integration
